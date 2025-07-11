@@ -5,8 +5,87 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   Min,
 } from 'class-validator';
+
+// DTOs para filtros y paginación
+export class VehiclePaginationDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  limit?: number = 10;
+
+  @IsOptional()
+  @IsString()
+  sortBy?: 'nombre' | 'marca' | 'precio' | 'anio' | 'createdAt' = 'createdAt';
+
+  @IsOptional()
+  @IsString()
+  sortOrder?: 'asc' | 'desc' = 'desc';
+}
+
+export class VehicleFiltersDto {
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsString()
+  marca?: string;
+
+  @IsOptional()
+  @IsString()
+  combustible?: string;
+
+  @IsOptional()
+  @IsString()
+  transmision?: string;
+
+  @IsOptional()
+  @IsString()
+  traccion?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1900)
+  anioMin?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Max(2030)
+  anioMax?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  precioMin?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  precioMax?: number;
+
+  @IsOptional()
+  @IsString()
+  kilometrajeMax?: string;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  destacado?: boolean;
+}
 
 export class CreateVehicleDto {
   @IsString()

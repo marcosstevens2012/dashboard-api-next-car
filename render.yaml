@@ -1,0 +1,12 @@
+version: 1
+build:
+  commands:
+    - npm install
+    - npm run build
+    - npx prisma generate
+    - npx prisma migrate deploy
+start:
+  command: npm run start:prod
+env:
+  - key: NODE_ENV
+    value: production

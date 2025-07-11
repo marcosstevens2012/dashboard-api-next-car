@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
@@ -19,6 +20,8 @@ import {
   CreateVehicleDto,
   HighlightVehicleDto,
   UpdateVehicleDto,
+  VehicleFiltersDto,
+  VehiclePaginationDto,
 } from './dto/vehicle.dto';
 import { VehiclesService } from './vehicles.service';
 
@@ -34,9 +37,28 @@ export class VehiclesController {
     return this.vehiclesService.create(createVehicleDto);
   }
 
+  // Endpoint principal para página web con paginación y filtros
   @Get()
-  findAll() {
-    return this.vehiclesService.findAll();
+  async findAll(@Query() query: VehicleFiltersDto & VehiclePaginationDto) {
+    return await this.vehiclesService.findAllPaginated(query);
+  }
+
+  // Endpoint para obtener vehículos destacados (página web)
+  @Get('featured')
+  async findFeatured(@Query() query: VehiclePaginationDto) {
+    return await this.vehiclesService.findFeatured(query);
+  }
+
+  // Endpoint para obtener estadísticas (dashboard)
+  @Get('stats')
+  async getStats() {
+    return await this.vehiclesService.getStats();
+  }
+
+  // Endpoint para obtener opciones de filtros (página web)
+  @Get('filter-options')
+  async getFilterOptions() {
+    return await this.vehiclesService.getFilterOptions();
   }
 
   @Get(':id')
