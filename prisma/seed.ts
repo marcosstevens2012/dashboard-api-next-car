@@ -1,8 +1,25 @@
 import { PrismaClient } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
+  // Crear usuario administrador
+  const hashedPassword = await bcrypt.hash('dashboard123', 10);
+
+  await prisma.user.upsert({
+    where: { username: 'admin' },
+    update: {},
+    create: {
+      username: 'admin',
+      password: hashedPassword,
+      role: 'admin',
+      isActive: true,
+    },
+  });
+
+  console.log('✅ Usuario admin creado');
+
   // Crear algunos vehículos de ejemplo
   const vehicle1 = await prisma.vehicle.create({
     data: {

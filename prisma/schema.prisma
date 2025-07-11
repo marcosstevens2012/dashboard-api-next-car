@@ -125,3 +125,15 @@ model Contact {
   
   @@map("contacts")
 }
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String   // Hash bcrypt
+  role      String   @default("admin")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("users")
+}

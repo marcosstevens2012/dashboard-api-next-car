@@ -37,33 +37,31 @@ export class VehiclesService {
 
     if (filters.search) {
       where.OR = [
-        { nombre: { contains: filters.search, mode: 'insensitive' } },
-        { marca: { contains: filters.search, mode: 'insensitive' } },
-        { modelo: { contains: filters.search, mode: 'insensitive' } },
-        { descripcion: { contains: filters.search, mode: 'insensitive' } },
+        { nombre: { contains: filters.search } },
+        { marca: { contains: filters.search } },
+        { modelo: { contains: filters.search } },
+        { descripcion: { contains: filters.search } },
       ];
     }
 
     if (filters.marca) {
-      where.marca = { equals: filters.marca, mode: 'insensitive' };
+      where.marca = { equals: filters.marca };
     }
 
     if (filters.combustible) {
       where.combustible = {
         equals: filters.combustible,
-        mode: 'insensitive',
       };
     }
 
     if (filters.transmision) {
       where.transmision = {
         equals: filters.transmision,
-        mode: 'insensitive',
       };
     }
 
     if (filters.traccion) {
-      where.traccion = { equals: filters.traccion, mode: 'insensitive' };
+      where.traccion = { equals: filters.traccion };
     }
 
     if (filters.anioMin || filters.anioMax) {
