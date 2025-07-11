@@ -1,0 +1,11 @@
+{
+  "name": "Start Development Server",
+  "type": "node",
+  "request": "launch",
+  "program": "${workspaceFolder}/dist/main.js",
+  "preLaunchTask": "npm: build",
+  "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

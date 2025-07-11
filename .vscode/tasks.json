@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm: build",
+      "type": "npm",
+      "script": "build",
+      "group": "build",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "npm: start:dev",
+      "type": "npm",
+      "script": "start:dev",
+      "group": "build",
+      "isBackground": true
+    },
+    {
+      "label": "Database: migrate",
+      "type": "shell",
+      "command": "npm run db:migrate",
+      "group": "build"
+    },
+    {
+      "label": "Database: seed",
+      "type": "shell",
+      "command": "npm run db:seed",
+      "group": "build"
+    }
+  ]
+}
