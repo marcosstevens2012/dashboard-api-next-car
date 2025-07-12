@@ -1,12 +1,18 @@
-version: 1
-build:
-  commands:
-    - npm install
-    - npm run build
-    - npx prisma generate
-    - npx prisma migrate deploy
-start:
-  command: npm run start:prod
-env:
-  - key: NODE_ENV
-    value: production
+services:
+  - type: web
+    name: nextcar-dashboard-api
+    runtime: node
+    buildCommand: npm install && npm run build && npx prisma generate && npx prisma migrate deploy
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nextcar-db
+          property: connectionString
+
+databases:
+  - name: nextcar-db
+    databaseName: nextcar
+    user: nextcar

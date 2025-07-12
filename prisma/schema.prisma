@@ -11,6 +11,9 @@ generator client {
 datasource db {
   provider = "sqlite"
   url      = "file:./dev.db"
+  // Para producción usar PostgreSQL:
+  // provider = "postgresql"
+  // url      = env("DATABASE_URL")
 }
 
 model Vehicle {
@@ -103,6 +106,8 @@ model Vehicle {
 model Image {
   id        String   @id @default(cuid())
   url       String
+  publicId  String?  // ID público de Cloudinary para eliminación
+  filename  String?  // Nombre original del archivo
   vehicleId String
   createdAt DateTime @default(now())
   
