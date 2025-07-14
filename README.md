@@ -95,30 +95,55 @@ src/
 └── main.ts
 ```
 
-## Endpoints Principales
+## 📚 Documentación de la API
 
-### Vehículos
+### 🌐 Endpoints Públicos (Sin autenticación)
 
-- `GET /vehicles` - Lista todos los vehículos
+- `GET /public/vehicles` - Lista vehículos con paginación y filtros avanzados
+- `GET /public/vehicles/featured` - Obtiene solo vehículos destacados
+- `GET /public/vehicles/filter-options` - Opciones disponibles para filtros
+- `GET /public/vehicles/:id` - Obtiene un vehículo específico con todos los detalles
+- `POST /public/contacts` - Crea una consulta de contacto (rate limited)
+
+### 🔐 Autenticación
+
+- `POST /auth/login` - Autentica usuario y devuelve JWT token
+
+### 🚗 Gestión de Vehículos
+
+- `GET /vehicles` - Lista todos los vehículos con filtros
+- `GET /vehicles/featured` - Vehículos destacados
+- `GET /vehicles/stats` - Estadísticas completas de vehículos
+- `GET /vehicles/filter-options` - Opciones para filtros dinámicos
 - `GET /vehicles/:id` - Obtiene un vehículo específico
-- `POST /vehicles` - Crea un nuevo vehículo
+- `POST /vehicles` - Crea un nuevo vehículo (50+ campos disponibles)
 - `PATCH /vehicles/:id` - Actualiza un vehículo
 - `DELETE /vehicles/:id` - Elimina un vehículo
-- `PATCH /vehicles/:id/highlight` - Destaca/quita destacado
-- `POST /vehicles/:id/images` - Sube imágenes a un vehículo
+- `PATCH /vehicles/:id/highlight` - Marca/desmarca como destacado
+- `POST /vehicles/:id/images` - Sube múltiples imágenes (hasta 10, 5MB c/u)
 
-### Imágenes
+### 🖼️ Gestión de Imágenes
 
 - `GET /images` - Lista todas las imágenes
 - `GET /images/:id` - Obtiene una imagen específica
 - `DELETE /images/:id` - Elimina una imagen
 
-### Contactos
+### 📞 Gestión de Contactos
 
 - `GET /contacts` - Lista todos los contactos
 - `GET /contacts/:id` - Obtiene un contacto específico
 - `POST /contacts` - Crea un nuevo contacto
 - `DELETE /contacts/:id` - Elimina un contacto
+
+### 🔒 Dashboard Administrativo (Requiere JWT)
+
+- `GET /dashboard/stats` - Estadísticas para el dashboard
+- `GET /dashboard/vehicles` - Gestión completa de vehículos
+- `GET /dashboard/contacts` - Gestión de consultas de clientes
+- `GET /dashboard/images` - Gestión de imágenes
+- Endpoints CRUD completos con autenticación JWT
+
+> **📖 Documentación Completa**: Ver `API_DOCUMENTATION.md` para detalles exhaustivos de todos los endpoints, parámetros, respuestas y ejemplos de uso.
 
 ## Características Técnicas del Modelo de Vehículo
 

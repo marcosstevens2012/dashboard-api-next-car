@@ -1,39 +1,98 @@
-# Ejemplos de Uso de la API - NEXTCAR Dashboard
+# 🚀 Ejemplos Completos de Uso - NEXTCAR Dashboard API
 
 ## 🔧 Configuración Base
+
+### Cliente HTTP con Axios
 
 ```typescript
 // api.config.ts
 export const API_BASE_URL = 'http://localhost:3001';
 
-// axios instance
 import axios from 'axios';
 
-export const api = axios.create({
-  baseURL: API_BASE_URL,
+// Cliente para endpoints públicos
+export const publicAPI = axios.create({
+  baseURL: `${API_BASE_URL}/public`,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Para upload de archivos
+// Cliente para endpoints privados
+export const privateAPI = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Cliente para upload de archivos
 export const apiFormData = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 30000,
   headers: {
     'Content-Type': 'multipart/form-data',
   },
 });
+
+// Interceptor para agregar JWT token automáticamente
+privateAPI.interceptors.request.use((config) => {
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Interceptor para manejar errores de autenticación
+privateAPI.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('authToken');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  },
+);
 ```
 
-## 🚗 Ejemplos de Vehículos
+## 🌐 Ejemplos de Endpoints Públicos
 
-### Obtener todos los vehículos
+### 1. Obtener Vehículos con Filtros Avanzados
 
 ```typescript
-// GET /vehicles
-const getVehicles = async () => {
+// Función para obtener vehículos con filtros
+interface VehicleFilters {
+  page?: number;
+  limit?: number;
+  search?: string;
+  marca?: string;
+  combustible?: string;
+  transmision?: string;
+  traccion?: string;
+  anioMin?: number;
+  anioMax?: number;
+  precioMin?: number;
+  precioMax?: number;
+  destacado?: boolean;
+  sortBy?: 'nombre' | 'marca' | 'precio' | 'anio' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export const getVehicles = async (filters: VehicleFilters = {}) => {
   try {
-    const response = await api.get('/vehicles');
+    const response = await publicAPI.get('/vehicles', {
+      params: {
+        page: 1,
+        limit: 10,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+        ...filters
+      }
+    });
     return response.data;
   } catch (error) {
     console.error('Error al obtener vehículos:', error);
@@ -41,43 +100,523 @@ const getVehicles = async () => {
   }
 };
 
+// Ejemplo de uso: Buscar Toyota con precio entre $20,000 y $30,000
+const toyotaVehicles = await getVehicles({
+  search: 'toyota',
+  marca: 'Toyota',
+  precioMin: 20000,
+  precioMax: 30000,
+  anioMin: 2020,
+  page: 1,
+  limit: 5,
+  sortBy: 'precio',
+  sortOrder: 'asc'
+});
+
 // Respuesta esperada:
-[
-  {
-    id: 'clz123abc456',
-    nombre: 'Toyota Corolla XEI',
-    marca: 'Toyota',
-    modelo: 'Corolla',
-    anio: 2023,
-    precio: 25000,
-    descripcion: 'Sedán compacto con excelente rendimiento en combustible',
-    destacado: true,
-    kilometraje: '15.000 km',
-    combustible: 'Nafta',
-    transmision: 'Automática',
-    aireAcondicionado: true,
-    abs: true,
-    images: [
-      {
-        id: 'img123',
-        url: '/uploads/vehicle-1234567890.jpg',
-        vehicleId: 'clz123abc456',
-        createdAt: '2024-01-15T10:30:00.000Z',
-      },
-    ],
-    createdAt: '2024-01-15T10:00:00.000Z',
-    updatedAt: '2024-01-15T10:00:00.000Z',
-  },
-];
+{
+  "data": [
+    {
+      "id": "clz123abc456",
+      "nombre": "Toyota Corolla XEI",
+      "marca": "Toyota",
+      "modelo": "Corolla",
+      "anio": 2023,
+      "precio": 25000,
+      "descripcion": "Sedán compacto con excelente rendimiento en combustible",
+      "destacado": true,
+      "kilometraje": "15.000 km",
+      "combustible": "Nafta",
+      "cilindrada": "1.8L",
+      "potencia": "140 HP",
+      "transmision": "Automática",
+      "traccion": "4x2",
+      "aireAcondicionado": true,
+      "abs": true,
+      "bluetooth": true,
+      "gps": false,
+      "images": [
+        {
+          "id": "img123",
+          "url": "/uploads/vehicle-1234567890.jpg"
+        }
+      ],
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "total": 15,
+    "page": 1,
+    "limit": 5,
+    "totalPages": 3,
+    "hasNextPage": true,
+    "hasPrevPage": false
+  }
+}
 ```
 
-### Crear un vehículo nuevo
+### 2. Obtener Vehículos Destacados
 
 ```typescript
-// POST /vehicles
-const createVehicle = async (vehicleData: CreateVehicleDto) => {
+export const getFeaturedVehicles = async (page = 1, limit = 6) => {
   try {
-    const response = await api.post('/vehicles', vehicleData);
+    const response = await publicAPI.get('/vehicles/featured', {
+      params: { page, limit }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener vehículos destacados:', error);
+    throw error;
+  }
+};
+
+// Uso en componente React para página principal
+const FeaturedVehicles = () => {
+  const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getFeaturedVehicles(1, 6)
+      .then(data => {
+        setVehicles(data.data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div>Cargando vehículos destacados...</div>;
+
+  return (
+    <div className="featured-vehicles">
+      {vehicles.map(vehicle => (
+        <VehicleCard key={vehicle.id} vehicle={vehicle} />
+      ))}
+    </div>
+  );
+};
+```
+
+### 3. Obtener Opciones para Filtros Dinámicos
+
+```typescript
+export const getFilterOptions = async () => {
+  try {
+    const response = await publicAPI.get('/vehicles/filter-options');
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener opciones de filtros:', error);
+    throw error;
+  }
+};
+
+// Respuesta esperada:
+{
+  "marcas": ["Toyota", "Ford", "Chevrolet", "Volkswagen", "Honda"],
+  "combustibles": ["Nafta", "Diesel", "Híbrido", "Eléctrico"],
+  "transmisiones": ["Manual", "Automática", "CVT"],
+  "tracciones": ["4x2", "4x4", "AWD"],
+  "anios": {
+    "min": 2015,
+    "max": 2024
+  },
+  "precios": {
+    "min": 8000,
+    "max": 80000
+  }
+}
+
+// Uso en componente de filtros
+const VehicleFilters = ({ onFiltersChange }) => {
+  const [filterOptions, setFilterOptions] = useState(null);
+
+  useEffect(() => {
+    getFilterOptions().then(setFilterOptions);
+  }, []);
+
+  if (!filterOptions) return <div>Cargando filtros...</div>;
+
+  return (
+    <div className="filters">
+      <select onChange={(e) => onFiltersChange({ marca: e.target.value })}>
+        <option value="">Todas las marcas</option>
+        {filterOptions.marcas.map(marca => (
+          <option key={marca} value={marca}>{marca}</option>
+        ))}
+      </select>
+      {/* Más filtros... */}
+    </div>
+  );
+};
+```
+
+### 4. Obtener Detalles Completos de un Vehículo
+
+```typescript
+export const getVehicleById = async (id: string) => {
+  try {
+    const response = await publicAPI.get(`/vehicles/${id}`);
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      throw new Error('Vehículo no encontrado');
+    }
+    throw error;
+  }
+};
+
+// Respuesta con TODOS los campos disponibles:
+{
+  "id": "clz123abc456",
+  "nombre": "Toyota Camry Hybrid Premium",
+  "marca": "Toyota",
+  "modelo": "Camry",
+  "anio": 2023,
+  "precio": 35000,
+  "descripcion": "Sedán híbrido premium con tecnología de última generación",
+  "destacado": true,
+  "kilometraje": "0 km",
+  "observaciones": "Vehículo 0 km con garantía de fábrica",
+
+  // Especificaciones del motor
+  "combustible": "Híbrido",
+  "cilindrada": "2.5L + Motor eléctrico",
+  "potencia": "218 HP combinados",
+  "alimentacion": "Inyección directa + Motor eléctrico",
+  "cilindros": 4,
+  "valvulas": 16,
+
+  // Transmisión y chasis
+  "traccion": "4x2",
+  "transmision": "CVT",
+  "velocidades": "CVT continua",
+  "neumaticos": "235/45 R18",
+  "frenosDelanteros": "Disco ventilado",
+  "frenosTraseros": "Disco sólido",
+  "direccionAsistida": true,
+  "direccionAsistidaTipo": "Eléctrica progresiva",
+
+  // Equipamiento de confort
+  "aireAcondicionado": true,
+  "asientoDelanteroAjuste": true,
+  "volanteRegulable": true,
+  "asientosTraseros": "60/40 abatibles",
+  "tapizados": "Cuero premium perforado",
+  "cierrePuertas": "Eléctrico con keyless",
+  "vidriosDelanteros": "Eléctricos con auto-up/down",
+  "vidriosTraseros": "Eléctricos",
+  "espejosExteriores": "Eléctricos plegables con calefacción",
+  "farosAntiniebla": true,
+  "computadoraBordo": true,
+  "llantasAleacion": true,
+  "camaraEstacionamiento": true,
+  "asistenciaArranquePendientes": true,
+  "controlEconomiaCombustible": true,
+  "luzDiurna": true,
+
+  // Equipamiento de seguridad
+  "abs": true,
+  "distribucionElectronicaFrenado": true,
+  "asistenciaFrenadaEmergencia": true,
+  "airbagsDelanteros": true,
+  "airbagsCortina": "Delanteros y traseros",
+  "airbagRodillaConductor": true,
+  "airbagsLaterales": "Delanteros",
+  "controlEstabilidad": true,
+  "controlTraccion": true,
+  "alarma": true,
+  "inmovilizador": true,
+  "sensorPresion": true,
+  "avisoCambioCarril": true,
+  "detectPuntosCiegos": true,
+  "asistEstacionamiento": true,
+
+  // Entretenimiento y comunicación
+  "equipoMusica": "Sistema premium JBL con 9 parlantes",
+  "comandosVolante": true,
+  "conexionUSB": true,
+  "conexionAuxiliar": true,
+  "bluetooth": true,
+  "pantalla": "9 pulgadas táctil HD",
+  "gps": true,
+  "appleCarplay": true,
+  "mirrorLink": true,
+  "sistemaNavegacion": true,
+  "reconocimientoVoz": true,
+  "cargadorInalambrico": true,
+
+  "images": [
+    {
+      "id": "img123",
+      "url": "/uploads/vehicle-1234567890.jpg",
+      "vehicleId": "clz123abc456",
+      "createdAt": "2024-01-15T10:30:00.000Z"
+    }
+  ],
+  "createdAt": "2024-01-15T10:00:00.000Z",
+  "updatedAt": "2024-01-15T10:00:00.000Z"
+}
+```
+
+### 5. Crear Consulta de Contacto
+
+```typescript
+interface CreateContactData {
+  nombre: string;
+  email: string;
+  telefono?: string;
+  mensaje: string;
+  vehiculoInteres?: string;
+}
+
+export const createContact = async (contactData: CreateContactData) => {
+  try {
+    const response = await publicAPI.post('/contacts', contactData);
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 429) {
+      throw new Error('Has enviado muchas consultas. Intenta de nuevo en unos minutos.');
+    }
+    throw error;
+  }
+};
+
+// Ejemplo de uso en formulario de contacto
+const ContactForm = ({ vehicleId, vehicleName }) => {
+  const [formData, setFormData] = useState({
+    nombre: '',
+    email: '',
+    telefono: '',
+    mensaje: '',
+    vehiculoInteres: vehicleName || ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await createContact(formData);
+      setSuccess(true);
+      setFormData({ nombre: '', email: '', telefono: '', mensaje: '', vehiculoInteres: '' });
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return <div className="success">¡Consulta enviada exitosamente!</div>;
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        placeholder="Nombre completo"
+        value={formData.nombre}
+        onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+        required
+      />
+      <input
+        type="email"
+        placeholder="Email"
+        value={formData.email}
+        onChange={(e) => setFormData({...formData, email: e.target.value})}
+        required
+      />
+      <input
+        type="tel"
+        placeholder="Teléfono (opcional)"
+        value={formData.telefono}
+        onChange={(e) => setFormData({...formData, telefono: e.target.value})}
+      />
+      <textarea
+        placeholder="Mensaje"
+        value={formData.mensaje}
+        onChange={(e) => setFormData({...formData, mensaje: e.target.value})}
+        required
+      />
+      <button type="submit" disabled={loading}>
+        {loading ? 'Enviando...' : 'Enviar Consulta'}
+      </button>
+    </form>
+  );
+};
+```
+
+## 🔐 Ejemplos de Autenticación y Dashboard
+
+### 1. Autenticación de Usuario
+
+```typescript
+interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+export const login = async (credentials: LoginCredentials) => {
+  try {
+    const response = await privateAPI.post('/auth/login', credentials);
+    const { access_token, user } = response.data;
+
+    // Guardar token en localStorage
+    localStorage.setItem('authToken', access_token);
+    localStorage.setItem('user', JSON.stringify(user));
+
+    return { token: access_token, user };
+  } catch (error) {
+    if (error.response?.status === 401) {
+      throw new Error('Credenciales inválidas');
+    }
+    throw new Error('Error de conexión');
+  }
+};
+
+// Ejemplo de uso en componente de login
+const LoginForm = () => {
+  const [credentials, setCredentials] = useState({
+    username: '',
+    password: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const { token, user } = await login(credentials);
+      console.log('Login exitoso:', user);
+      // Redirigir al dashboard
+      window.location.href = '/dashboard';
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="login-form">
+      <div>
+        <input
+          type="text"
+          placeholder="Usuario"
+          value={credentials.username}
+          onChange={(e) => setCredentials({...credentials, username: e.target.value})}
+          required
+        />
+      </div>
+      <div>
+        <input
+          type="password"
+          placeholder="Contraseña"
+          value={credentials.password}
+          onChange={(e) => setCredentials({...credentials, password: e.target.value})}
+          required
+        />
+      </div>
+      {error && <div className="error">{error}</div>}
+      <button type="submit" disabled={loading}>
+        {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+      </button>
+    </form>
+  );
+};
+```
+
+### 2. Estadísticas del Dashboard
+
+```typescript
+export const getDashboardStats = async () => {
+  try {
+    const response = await privateAPI.get('/dashboard/stats');
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener estadísticas:', error);
+    throw error;
+  }
+};
+
+// Respuesta esperada:
+{
+  "total": 150,
+  "destacados": 15,
+  "porMarca": {
+    "Toyota": 45,
+    "Ford": 32,
+    "Chevrolet": 28,
+    "Volkswagen": 25,
+    "otros": 20
+  },
+  "porCombustible": {
+    "Nafta": 85,
+    "Diesel": 45,
+    "Híbrido": 15,
+    "Eléctrico": 5
+  },
+  "porTransmision": {
+    "Manual": 70,
+    "Automática": 65,
+    "CVT": 15
+  },
+  "precioPromedio": 28500,
+  "anioPromedio": 2020
+}
+
+// Componente de estadísticas
+const DashboardStats = () => {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getDashboardStats()
+      .then(setStats)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div>Cargando estadísticas...</div>;
+  if (!stats) return <div>Error al cargar estadísticas</div>;
+
+  return (
+    <div className="dashboard-stats">
+      <div className="stat-card">
+        <h3>Total de Vehículos</h3>
+        <p className="stat-number">{stats.total}</p>
+      </div>
+      <div className="stat-card">
+        <h3>Vehículos Destacados</h3>
+        <p className="stat-number">{stats.destacados}</p>
+      </div>
+      <div className="stat-card">
+        <h3>Precio Promedio</h3>
+        <p className="stat-number">${stats.precioPromedio.toLocaleString()}</p>
+      </div>
+      <div className="stat-card">
+        <h3>Año Promedio</h3>
+        <p className="stat-number">{stats.anioPromedio}</p>
+      </div>
+    </div>
+  );
+};
+```
+
+## 🚗 Crear Vehículo Completo
+
+```typescript
+export const createCompleteVehicle = async (vehicleData) => {
+  try {
+    const response = await privateAPI.post('/vehicles', vehicleData);
     return response.data;
   } catch (error) {
     console.error('Error al crear vehículo:', error);
@@ -85,143 +624,136 @@ const createVehicle = async (vehicleData: CreateVehicleDto) => {
   }
 };
 
-// Ejemplo de datos para crear un vehículo:
-const newVehicle = {
-  nombre: 'Ford Focus Titanium',
-  marca: 'Ford',
-  modelo: 'Focus',
-  anio: 2022,
-  precio: 22000,
-  descripcion: 'Hatchback premium con tecnología avanzada',
-  destacado: false,
+// Ejemplo de vehículo completo con TODOS los campos
+const completeVehicleExample = {
+  // Campos obligatorios
+  nombre: 'Toyota Camry Hybrid XLE',
+  marca: 'Toyota',
+  modelo: 'Camry',
+  anio: 2024,
+  precio: 45000,
+  descripcion:
+    'Sedán híbrido premium con tecnología de última generación y diseño elegante',
 
-  // Información adicional
-  kilometraje: '25.000 km',
-  observaciones: 'Único dueño, service al día',
+  // Información básica
+  destacado: true,
+  kilometraje: '0 km',
+  observaciones: 'Vehículo 0 km con garantía extendida de 5 años',
 
-  // Motor
-  combustible: 'Nafta',
-  cilindrada: '2.0',
-  potencia: '170 CV',
-  alimentacion: 'Inyección Electrónica',
+  // Especificaciones del motor
+  combustible: 'Híbrido',
+  cilindrada: '2.5L + Motor eléctrico',
+  potencia: '218 HP combinados',
+  alimentacion: 'Inyección directa + Sistema híbrido',
   cilindros: 4,
   valvulas: 16,
 
-  // Transmisión
-  traccion: '4X2',
-  transmision: 'Automática',
-  velocidades: 'Caja de Sexta',
-  neumaticos: 'R17',
-  frenosDelanteros: 'Discos ventilados',
-  frenosTraseros: 'Discos sólidos',
+  // Transmisión y chasis
+  traccion: '4x2',
+  transmision: 'CVT',
+  velocidades: 'CVT continua',
+  neumaticos: '235/45 R18 Michelin',
+  frenosDelanteros: 'Disco ventilado de 12.9"',
+  frenosTraseros: 'Disco sólido de 11.1"',
   direccionAsistida: true,
-  direccionAsistidaTipo: 'Eléctrica',
+  direccionAsistidaTipo: 'Eléctrica progresiva',
 
-  // Confort
+  // Equipamiento de confort
   aireAcondicionado: true,
   asientoDelanteroAjuste: true,
   volanteRegulable: true,
-  asientosTraseros: 'Abatibles 60/40',
-  tapizados: 'Cuero',
-  cierrePuertas: 'Centralizado con mando',
-  vidriosDelanteros: 'Eléctricos',
-  vidriosTraseros: 'Eléctricos',
-  espejosExteriores: 'Eléctricos plegables',
+  asientosTraseros: '60/40 abatibles con reposabrazos central',
+  tapizados: 'Cuero premium perforado SofTex',
+  cierrePuertas: 'Eléctrico con keyless entry y push start',
+  vidriosDelanteros: 'Eléctricos con auto-up/down y anti-pinch',
+  vidriosTraseros: 'Eléctricos con auto-up/down',
+  espejosExteriores: 'Eléctricos plegables con calefacción y señal de giro',
   farosAntiniebla: true,
   computadoraBordo: true,
   llantasAleacion: true,
   camaraEstacionamiento: true,
+  asistenciaArranquePendientes: true,
+  controlEconomiaCombustible: true,
+  luzDiurna: true,
 
-  // Seguridad
+  // Equipamiento de seguridad
   abs: true,
   distribucionElectronicaFrenado: true,
   asistenciaFrenadaEmergencia: true,
   airbagsDelanteros: true,
-  airbagsCortina: 'Completos',
+  airbagsCortina: 'Delanteros y traseros con sensor de impacto',
   airbagRodillaConductor: true,
-  airbagsLaterales: 'Delanteros',
-  alarma: true,
-  inmovilizadorMotor: true,
+  airbagsLaterales: 'Delanteros con sensor de posición',
   controlEstabilidad: true,
   controlTraccion: true,
-  cantidadAirbags: 6,
+  alarma: true,
+  inmovilizador: true,
+  sensorPresion: true,
+  avisoCambioCarril: true,
+  detectPuntosCiegos: true,
+  asistEstacionamiento: true,
 
-  // Entretenimiento
-  equipoMusica: 'CD/MP3/Radio',
+  // Entretenimiento y comunicación
+  equipoMusica: 'Sistema premium JBL con 9 parlantes y subwoofer',
   comandosVolante: true,
-  conexionAuxiliar: true,
   conexionUSB: true,
-  interfazBluetooth: true,
-  pantalla: true,
-  sistemaNavegacionGPS: true,
-  appleCarPlay: true,
+  conexionAuxiliar: true,
+  bluetooth: true,
+  pantalla: '9 pulgadas táctil HD con Android Auto',
+  gps: true,
+  appleCarplay: true,
+  mirrorLink: true,
+  sistemaNavegacion: true,
+  reconocimientoVoz: true,
+  cargadorInalambrico: true,
 };
 
-await createVehicle(newVehicle);
-```
-
-### Actualizar un vehículo
-
-```typescript
-// PATCH /vehicles/:id
-const updateVehicle = async (id: string, updates: UpdateVehicleDto) => {
+// Uso del ejemplo
+const handleCreateVehicle = async () => {
   try {
-    const response = await api.patch(`/vehicles/${id}`, updates);
-    return response.data;
+    const newVehicle = await createCompleteVehicle(completeVehicleExample);
+    console.log('Vehículo creado:', newVehicle);
+    // Redirigir o actualizar lista
   } catch (error) {
-    console.error('Error al actualizar vehículo:', error);
-    throw error;
+    console.error('Error:', error);
   }
 };
-
-// Ejemplo: Actualizar solo algunos campos
-await updateVehicle('clz123abc456', {
-  precio: 23000,
-  destacado: true,
-  observaciones: 'Precio negociable',
-});
 ```
 
-### Destacar/quitar destaque de un vehículo
+## 📤 Upload de Imágenes Múltiples
 
 ```typescript
-// PATCH /vehicles/:id/highlight
-const highlightVehicle = async (id: string, destacado: boolean) => {
-  try {
-    const response = await api.patch(`/vehicles/${id}/highlight`, {
-      destacado,
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error al destacar vehículo:', error);
-    throw error;
-  }
-};
-
-// Destacar vehículo
-await highlightVehicle('clz123abc456', true);
-
-// Quitar destaque
-await highlightVehicle('clz123abc456', false);
-```
-
-### Subir imágenes a un vehículo
-
-```typescript
-// POST /vehicles/:id/images
-const uploadVehicleImages = async (vehicleId: string, files: FileList) => {
+export const uploadMultipleImages = async (vehicleId: string, files: FileList) => {
   try {
     const formData = new FormData();
 
+    // Validar archivos antes de subir
+    const validFiles = Array.from(files).filter(file => {
+      const isImage = file.type.startsWith('image/');
+      const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
+      return isImage && isValidSize;
+    });
+
+    if (validFiles.length === 0) {
+      throw new Error('No hay archivos válidos para subir');
+    }
+
+    if (validFiles.length > 10) {
+      throw new Error('Máximo 10 imágenes por vehículo');
+    }
+
     // Agregar archivos al FormData
-    Array.from(files).forEach((file) => {
+    validFiles.forEach((file) => {
       formData.append('images', file);
     });
 
-    const response = await apiFormData.post(
-      `/vehicles/${vehicleId}/images`,
-      formData,
-    );
+    const response = await apiFormData.post(`/vehicles/${vehicleId}/images`, formData, {
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        console.log(`Upload progress: ${percentCompleted}%`);
+      }
+    });
+
     return response.data;
   } catch (error) {
     console.error('Error al subir imágenes:', error);
@@ -229,660 +761,187 @@ const uploadVehicleImages = async (vehicleId: string, files: FileList) => {
   }
 };
 
-// Ejemplo de uso en React
-const handleImageUpload = async (
-  vehicleId: string,
-  event: React.ChangeEvent<HTMLInputElement>,
-) => {
-  const files = event.target.files;
-  if (files && files.length > 0) {
+// Componente para upload de imágenes
+const ImageUploader = ({ vehicleId, onUploadComplete }) => {
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState('');
+
+  const handleFileSelect = async (event) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    setError('');
+    setProgress(0);
+
     try {
-      const uploadedImages = await uploadVehicleImages(vehicleId, files);
-      console.log('Imágenes subidas:', uploadedImages);
+      const uploadedImages = await uploadMultipleImages(vehicleId, files);
+      onUploadComplete(uploadedImages);
+      // Limpiar input
+      event.target.value = '';
     } catch (error) {
-      console.error('Error:', error);
-    }
-  }
-};
-```
-
-### Eliminar un vehículo
-
-```typescript
-// DELETE /vehicles/:id
-const deleteVehicle = async (id: string) => {
-  try {
-    await api.delete(`/vehicles/${id}`);
-    return true;
-  } catch (error) {
-    console.error('Error al eliminar vehículo:', error);
-    throw error;
-  }
-};
-
-await deleteVehicle('clz123abc456');
-```
-
-## 📸 Ejemplos de Imágenes
-
-### Obtener todas las imágenes
-
-```typescript
-// GET /images
-const getAllImages = async () => {
-  try {
-    const response = await api.get('/images');
-    return response.data;
-  } catch (error) {
-    console.error('Error al obtener imágenes:', error);
-    throw error;
-  }
-};
-```
-
-### Eliminar una imagen
-
-```typescript
-// DELETE /images/:id
-const deleteImage = async (imageId: string) => {
-  try {
-    await api.delete(`/images/${imageId}`);
-    return true;
-  } catch (error) {
-    console.error('Error al eliminar imagen:', error);
-    throw error;
-  }
-};
-
-await deleteImage('img123');
-```
-
-## 📞 Ejemplos de Contactos
-
-### Obtener todos los contactos
-
-```typescript
-// GET /contacts
-const getContacts = async () => {
-  try {
-    const response = await api.get('/contacts');
-    return response.data;
-  } catch (error) {
-    console.error('Error al obtener contactos:', error);
-    throw error;
-  }
-};
-
-// Respuesta esperada:
-[
-  {
-    id: 'contact123',
-    nombre: 'Juan',
-    apellido: 'Pérez',
-    ciudad: 'Buenos Aires',
-    provincia: 'Buenos Aires',
-    telefono: '+54 11 1234-5678',
-    email: 'juan.perez@email.com',
-    mensaje:
-      'Estoy interesado en el Toyota Corolla XEI. ¿Podrían enviarme más información sobre el financiamiento?',
-    creadoEn: '2024-01-15T14:30:00.000Z',
-  },
-];
-```
-
-### Crear un nuevo contacto
-
-```typescript
-// POST /contacts
-const createContact = async (contactData: CreateContactDto) => {
-  try {
-    const response = await api.post('/contacts', contactData);
-    return response.data;
-  } catch (error) {
-    console.error('Error al crear contacto:', error);
-    throw error;
-  }
-};
-
-// Ejemplo de datos para crear un contacto:
-const newContact = {
-  nombre: 'María',
-  apellido: 'González',
-  ciudad: 'Córdoba',
-  provincia: 'Córdoba',
-  telefono: '+54 351 123-4567',
-  email: 'maria.gonzalez@email.com',
-  mensaje:
-    'Me interesa el Ford Focus. ¿Está disponible para una prueba de manejo?',
-};
-
-await createContact(newContact);
-```
-
-### Eliminar un contacto
-
-```typescript
-// DELETE /contacts/:id
-const deleteContact = async (id: string) => {
-  try {
-    await api.delete(`/contacts/${id}`);
-    return true;
-  } catch (error) {
-    console.error('Error al eliminar contacto:', error);
-    throw error;
-  }
-};
-
-await deleteContact('contact123');
-```
-
-## 🛠️ Componentes React Ejemplo
-
-### Hook personalizado para vehículos
-
-```typescript
-// hooks/useVehicles.ts
-import { useState, useEffect } from 'react';
-import { api } from '../api/config';
-
-interface Vehicle {
-  id: string;
-  nombre: string;
-  marca: string;
-  modelo: string;
-  anio: number;
-  precio: number;
-  descripcion: string;
-  destacado: boolean;
-  images: Array<{
-    id: string;
-    url: string;
-  }>;
-  // ... otros campos
-}
-
-export const useVehicles = () => {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchVehicles = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/vehicles');
-      setVehicles(response.data);
-      setError(null);
-    } catch (err) {
-      setError('Error al cargar vehículos');
-      console.error(err);
+      setError(error.message);
     } finally {
-      setLoading(false);
+      setUploading(false);
+      setProgress(0);
     }
   };
-
-  const createVehicle = async (vehicleData: any) => {
-    try {
-      const response = await api.post('/vehicles', vehicleData);
-      setVehicles((prev) => [...prev, response.data]);
-      return response.data;
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  const updateVehicle = async (id: string, updates: any) => {
-    try {
-      const response = await api.patch(`/vehicles/${id}`, updates);
-      setVehicles((prev) =>
-        prev.map((vehicle) => (vehicle.id === id ? response.data : vehicle)),
-      );
-      return response.data;
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  const deleteVehicle = async (id: string) => {
-    try {
-      await api.delete(`/vehicles/${id}`);
-      setVehicles((prev) => prev.filter((vehicle) => vehicle.id !== id));
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  const highlightVehicle = async (id: string, destacado: boolean) => {
-    try {
-      const response = await api.patch(`/vehicles/${id}/highlight`, {
-        destacado,
-      });
-      setVehicles((prev) =>
-        prev.map((vehicle) =>
-          vehicle.id === id ? { ...vehicle, destacado } : vehicle,
-        ),
-      );
-      return response.data;
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  useEffect(() => {
-    fetchVehicles();
-  }, []);
-
-  return {
-    vehicles,
-    loading,
-    error,
-    fetchVehicles,
-    createVehicle,
-    updateVehicle,
-    deleteVehicle,
-    highlightVehicle,
-  };
-};
-```
-
-### Componente de lista de vehículos
-
-```typescript
-// components/VehicleList.tsx
-import React, { useState } from 'react';
-import { useVehicles } from '../hooks/useVehicles';
-
-const VehicleList: React.FC = () => {
-  const { vehicles, loading, error, deleteVehicle, highlightVehicle } = useVehicles();
-  const [filter, setFilter] = useState('');
-
-  const filteredVehicles = vehicles.filter(vehicle =>
-    vehicle.nombre.toLowerCase().includes(filter.toLowerCase()) ||
-    vehicle.marca.toLowerCase().includes(filter.toLowerCase()) ||
-    vehicle.modelo.toLowerCase().includes(filter.toLowerCase())
-  );
-
-  const handleDelete = async (id: string) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este vehículo?')) {
-      try {
-        await deleteVehicle(id);
-      } catch (error) {
-        alert('Error al eliminar el vehículo');
-      }
-    }
-  };
-
-  const handleHighlight = async (id: string, currentHighlight: boolean) => {
-    try {
-      await highlightVehicle(id, !currentHighlight);
-    } catch (error) {
-      alert('Error al cambiar el estado destacado');
-    }
-  };
-
-  if (loading) return <div>Cargando vehículos...</div>;
-  if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
+    <div className="image-uploader">
+      <div className="upload-area">
         <input
-          type="text"
-          placeholder="Buscar vehículos..."
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-lg"
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={handleFileSelect}
+          disabled={uploading}
+          className="file-input"
         />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredVehicles.map((vehicle) => (
-          <div key={vehicle.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-            {vehicle.images.length > 0 && (
-              <img
-                src={`http://localhost:3000${vehicle.images[0].url}`}
-                alt={vehicle.nombre}
-                className="w-full h-48 object-cover"
-              />
-            )}
-
-            <div className="p-4">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="text-lg font-semibold">{vehicle.nombre}</h3>
-                {vehicle.destacado && (
-                  <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">
-                    Destacado
-                  </span>
-                )}
-              </div>
-
-              <p className="text-gray-600 mb-2">
-                {vehicle.marca} {vehicle.modelo} {vehicle.anio}
-              </p>
-
-              <p className="text-xl font-bold text-green-600 mb-3">
-                ${vehicle.precio.toLocaleString()}
-              </p>
-
-              <p className="text-gray-700 text-sm mb-4 line-clamp-2">
-                {vehicle.descripcion}
-              </p>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleHighlight(vehicle.id, vehicle.destacado)}
-                  className={`flex-1 py-2 px-3 rounded text-sm ${
-                    vehicle.destacado
-                      ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                      : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                  }`}
-                >
-                  {vehicle.destacado ? 'Quitar destaque' : 'Destacar'}
-                </button>
-
-                <button
-                  onClick={() => handleDelete(vehicle.id)}
-                  className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm"
-                >
-                  Eliminar
-                </button>
+        <div className="upload-text">
+          {uploading ? (
+            <div>
+              <p>Subiendo imágenes... {progress}%</p>
+              <div className="progress-bar">
+                <div
+                  className="progress-fill"
+                  style={{ width: `${progress}%` }}
+                />
               </div>
             </div>
-          </div>
-        ))}
+          ) : (
+            <p>Seleccionar imágenes (máximo 10, 5MB cada una)</p>
+          )}
+        </div>
       </div>
+      {error && <div className="error-message">{error}</div>}
     </div>
   );
 };
-
-export default VehicleList;
 ```
 
-### Componente de formulario de vehículo
+## 🔍 Búsqueda y Filtros Avanzados
 
 ```typescript
-// components/VehicleForm.tsx
-import React, { useState } from 'react';
-import { useVehicles } from '../hooks/useVehicles';
-
-interface VehicleFormProps {
-  onSuccess?: () => void;
-  vehicleToEdit?: any;
-}
-
-const VehicleForm: React.FC<VehicleFormProps> = ({ onSuccess, vehicleToEdit }) => {
-  const { createVehicle, updateVehicle } = useVehicles();
-  const [activeTab, setActiveTab] = useState('basic');
-  const [loading, setLoading] = useState(false);
-
-  const [formData, setFormData] = useState({
-    // Información básica
-    nombre: vehicleToEdit?.nombre || '',
-    marca: vehicleToEdit?.marca || '',
-    modelo: vehicleToEdit?.modelo || '',
-    anio: vehicleToEdit?.anio || new Date().getFullYear(),
-    precio: vehicleToEdit?.precio || 0,
-    descripcion: vehicleToEdit?.descripcion || '',
-    destacado: vehicleToEdit?.destacado || false,
-
-    // Motor
-    combustible: vehicleToEdit?.combustible || '',
-    cilindrada: vehicleToEdit?.cilindrada || '',
-    potencia: vehicleToEdit?.potencia || '',
-    transmision: vehicleToEdit?.transmision || '',
-
-    // Confort
-    aireAcondicionado: vehicleToEdit?.aireAcondicionado || false,
-    abs: vehicleToEdit?.abs || false,
-    // ... más campos
+// Hook para manejo de filtros
+const useVehicleFilters = () => {
+  const [filters, setFilters] = useState({
+    search: '',
+    marca: '',
+    combustible: '',
+    transmision: '',
+    traccion: '',
+    anioMin: '',
+    anioMax: '',
+    precioMin: '',
+    precioMax: '',
+    destacado: null,
+    page: 1,
+    limit: 12,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const [vehicles, setVehicles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [meta, setMeta] = useState(null);
+
+  const applyFilters = async () => {
     setLoading(true);
-
     try {
-      if (vehicleToEdit) {
-        await updateVehicle(vehicleToEdit.id, formData);
-      } else {
-        await createVehicle(formData);
-      }
-
-      if (onSuccess) onSuccess();
+      const response = await publicAPI.get('/vehicles', { params: filters });
+      setVehicles(response.data.data);
+      setMeta(response.data.meta);
     } catch (error) {
-      alert('Error al guardar el vehículo');
+      console.error('Error al aplicar filtros:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (field: string, value: any) => {
-    setFormData(prev => ({
+  const updateFilter = (key, value) => {
+    setFilters((prev) => ({
       ...prev,
-      [field]: value
+      [key]: value,
+      page: 1, // Reset page when filter changes
     }));
   };
 
-  const tabs = [
-    { id: 'basic', label: 'Información Básica' },
-    { id: 'motor', label: 'Motor' },
-    { id: 'comfort', label: 'Confort' },
-    { id: 'safety', label: 'Seguridad' },
-    { id: 'entertainment', label: 'Entretenimiento' },
-  ];
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      marca: '',
+      combustible: '',
+      transmision: '',
+      traccion: '',
+      anioMin: '',
+      anioMax: '',
+      precioMin: '',
+      precioMax: '',
+      destacado: null,
+      page: 1,
+      limit: 12,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    });
+  };
 
-  return (
-    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-8">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
+  useEffect(() => {
+    applyFilters();
+  }, [filters]);
 
-      {/* Información Básica */}
-      {activeTab === 'basic' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nombre *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.nombre}
-              onChange={(e) => handleChange('nombre', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Marca *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.marca}
-              onChange={(e) => handleChange('marca', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Modelo *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.modelo}
-              onChange={(e) => handleChange('modelo', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Año *
-            </label>
-            <input
-              type="number"
-              required
-              min="1900"
-              value={formData.anio}
-              onChange={(e) => handleChange('anio', parseInt(e.target.value))}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Precio *
-            </label>
-            <input
-              type="number"
-              required
-              min="0"
-              value={formData.precio}
-              onChange={(e) => handleChange('precio', parseFloat(e.target.value))}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Descripción *
-            </label>
-            <textarea
-              required
-              rows={4}
-              value={formData.descripcion}
-              onChange={(e) => handleChange('descripcion', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            />
-          </div>
-
-          <div>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.destacado}
-                onChange={(e) => handleChange('destacado', e.target.checked)}
-                className="mr-2"
-              />
-              <span className="text-sm font-medium text-gray-700">Destacado</span>
-            </label>
-          </div>
-        </div>
-      )}
-
-      {/* Motor */}
-      {activeTab === 'motor' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Combustible
-            </label>
-            <select
-              value={formData.combustible}
-              onChange={(e) => handleChange('combustible', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            >
-              <option value="">Seleccionar...</option>
-              <option value="Nafta">Nafta</option>
-              <option value="Diesel">Diesel</option>
-              <option value="Híbrido">Híbrido</option>
-              <option value="Eléctrico">Eléctrico</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Transmisión
-            </label>
-            <select
-              value={formData.transmision}
-              onChange={(e) => handleChange('transmision', e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg"
-            >
-              <option value="">Seleccionar...</option>
-              <option value="Manual">Manual</option>
-              <option value="Automática">Automática</option>
-              <option value="CVT">CVT</option>
-            </select>
-          </div>
-
-          {/* Más campos del motor... */}
-        </div>
-      )}
-
-      {/* Confort */}
-      {activeTab === 'comfort' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.aireAcondicionado}
-                onChange={(e) => handleChange('aireAcondicionado', e.target.checked)}
-                className="mr-2"
-              />
-              <span className="text-sm font-medium text-gray-700">Aire Acondicionado</span>
-            </label>
-          </div>
-
-          {/* Más campos de confort... */}
-        </div>
-      )}
-
-      {/* Botones */}
-      <div className="mt-8 flex gap-4">
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg disabled:opacity-50"
-        >
-          {loading ? 'Guardando...' : (vehicleToEdit ? 'Actualizar' : 'Crear')} Vehículo
-        </button>
-      </div>
-    </form>
-  );
+  return {
+    filters,
+    vehicles,
+    loading,
+    meta,
+    updateFilter,
+    clearFilters,
+    setFilters,
+  };
 };
-
-export default VehicleForm;
 ```
 
-## 🔗 URLs de Archivos Estáticos
-
-Para mostrar las imágenes en el frontend:
+## 🧪 Ejemplos de Testing
 
 ```typescript
-// utils/imageUtils.ts
-export const getImageUrl = (imagePath: string) => {
-  return `http://localhost:3000${imagePath}`;
-};
+// tests/api.test.ts
+import { describe, it, expect, beforeEach } from 'vitest';
+import { publicAPI } from '../src/services/api';
 
-// Ejemplo de uso:
-const ImageComponent = ({ image }: { image: { url: string } }) => (
-  <img
-    src={getImageUrl(image.url)}
-    alt="Vehicle"
-    className="w-full h-auto"
-  />
-);
+describe('Public API Endpoints', () => {
+  it('should fetch vehicles with pagination', async () => {
+    const response = await publicAPI.get('/vehicles', {
+      params: { page: 1, limit: 10 },
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.data).toHaveProperty('data');
+    expect(response.data).toHaveProperty('meta');
+    expect(Array.isArray(response.data.data)).toBe(true);
+  });
+
+  it('should filter vehicles by marca', async () => {
+    const response = await publicAPI.get('/vehicles', {
+      params: { marca: 'Toyota' },
+    });
+
+    expect(response.status).toBe(200);
+    response.data.data.forEach((vehicle) => {
+      expect(vehicle.marca).toBe('Toyota');
+    });
+  });
+
+  it('should get featured vehicles only', async () => {
+    const response = await publicAPI.get('/vehicles/featured');
+
+    expect(response.status).toBe(200);
+    response.data.data.forEach((vehicle) => {
+      expect(vehicle.destacado).toBe(true);
+    });
+  });
+});
 ```
 
-Este archivo proporciona ejemplos completos y prácticos de cómo consumir la API desde el frontend, incluyendo hooks personalizados, componentes React y manejo de errores.
+Esta documentación completa cubre todos los aspectos de la API con ejemplos prácticos y detallados para integración en aplicaciones reales.
