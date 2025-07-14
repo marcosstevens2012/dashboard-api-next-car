@@ -39,10 +39,41 @@ async function bootstrap() {
 
   // Configurar Swagger
   const config = new DocumentBuilder()
-    .setTitle('Dashboard API')
-    .setDescription('API para administrar vehículos y contactos')
+    .setTitle('NEXTCAR Dashboard API')
+    .setDescription(
+      `
+    API completa para la gestión de vehículos y contactos del dashboard NEXTCAR.
+    
+    ## Funcionalidades principales:
+    - **Gestión de vehículos**: CRUD completo con más de 50 campos de especificaciones
+    - **Sistema de imágenes**: Upload y gestión de imágenes de vehículos
+    - **Formulario de contacto**: Sistema de consultas con rate limiting
+    - **Dashboard administrativo**: Panel protegido con JWT para administradores
+    - **API pública**: Endpoints públicos con filtros y paginación
+    
+    ## Autenticación:
+    - Los endpoints del dashboard requieren JWT token
+    - Usar el endpoint /auth/login para obtener el token
+    - Incluir el token en el header: Authorization: Bearer <token>
+    
+    ## Rate Limiting:
+    - Endpoints públicos tienen limitaciones de velocidad
+    - Contactos: 5 requests/5min
+    - Vehículos: 100 requests/min
+    - Filtros: 20 requests/min
+    `,
+    )
     .setVersion('1.0')
-    .addBearerAuth() // Para JWT en Swagger
+    .addBearerAuth({
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+      name: 'Authorization',
+      description: 'Ingresa el JWT token obtenido del endpoint /auth/login',
+      in: 'header',
+    })
+    .addServer('http://localhost:3000', 'Desarrollo')
+    .addServer('https://tu-dominio.com', 'Producción')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

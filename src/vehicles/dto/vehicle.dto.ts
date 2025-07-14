@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -11,12 +12,25 @@ import {
 
 // DTOs para filtros y paginación
 export class VehiclePaginationDto {
+  @ApiPropertyOptional({
+    description: 'Número de página',
+    minimum: 1,
+    default: 1,
+    example: 1,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(1)
   page?: number = 1;
 
+  @ApiPropertyOptional({
+    description: 'Elementos por página',
+    minimum: 1,
+    maximum: 100,
+    default: 10,
+    example: 10,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
@@ -24,24 +38,48 @@ export class VehiclePaginationDto {
   @Max(100)
   limit?: number = 10;
 
+  @ApiPropertyOptional({
+    description: 'Campo para ordenar',
+    enum: ['nombre', 'marca', 'precio', 'anio', 'createdAt'],
+    default: 'createdAt',
+    example: 'createdAt',
+  })
   @IsOptional()
   @IsString()
   sortBy?: 'nombre' | 'marca' | 'precio' | 'anio' | 'createdAt' = 'createdAt';
 
+  @ApiPropertyOptional({
+    description: 'Orden de clasificación',
+    enum: ['asc', 'desc'],
+    default: 'desc',
+    example: 'desc',
+  })
   @IsOptional()
   @IsString()
   sortOrder?: 'asc' | 'desc' = 'desc';
 }
 
 export class VehicleFiltersDto {
+  @ApiPropertyOptional({
+    description: 'Búsqueda en nombre, marca y modelo',
+    example: 'Toyota Corolla',
+  })
   @IsOptional()
   @IsString()
   search?: string;
 
+  @ApiPropertyOptional({
+    description: 'Filtrar por marca',
+    example: 'Toyota',
+  })
   @IsOptional()
   @IsString()
   marca?: string;
 
+  @ApiPropertyOptional({
+    description: 'Filtrar por tipo de combustible',
+    example: 'Nafta',
+  })
   @IsOptional()
   @IsString()
   combustible?: string;
@@ -88,108 +126,207 @@ export class VehicleFiltersDto {
 }
 
 export class CreateVehicleDto {
+  @ApiProperty({
+    description: 'Nombre del vehículo',
+    example: 'Toyota Corolla XEI',
+  })
   @IsString()
   @IsNotEmpty()
   nombre: string;
 
+  @ApiProperty({
+    description: 'Marca del vehículo',
+    example: 'Toyota',
+  })
   @IsString()
   @IsNotEmpty()
   marca: string;
 
+  @ApiProperty({
+    description: 'Modelo del vehículo',
+    example: 'Corolla',
+  })
   @IsString()
   @IsNotEmpty()
   modelo: string;
 
+  @ApiProperty({
+    description: 'Año del vehículo',
+    minimum: 1900,
+    example: 2023,
+  })
   @IsNumber()
   @Type(() => Number)
   @Min(1900)
   anio: number;
 
+  @ApiProperty({
+    description: 'Precio del vehículo en USD',
+    minimum: 0,
+    example: 25000,
+  })
   @IsNumber()
   @Type(() => Number)
   @Min(0)
   precio: number;
 
+  @ApiProperty({
+    description: 'Descripción del vehículo',
+    example: 'Sedán compacto con excelente rendimiento de combustible',
+  })
   @IsString()
   @IsNotEmpty()
   descripcion: string;
 
+  @ApiPropertyOptional({
+    description: 'Si el vehículo está destacado',
+    default: false,
+    example: false,
+  })
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
   destacado?: boolean;
 
   // Información básica adicional
+  @ApiPropertyOptional({
+    description: 'Kilometraje del vehículo',
+    example: '15.000 km',
+  })
   @IsOptional()
   @IsString()
   kilometraje?: string;
 
+  @ApiPropertyOptional({
+    description: 'Observaciones adicionales',
+    example: 'Único dueño, service al día',
+  })
   @IsOptional()
   @IsString()
   observaciones?: string;
 
   // Motor
+  @ApiPropertyOptional({
+    description: 'Tipo de combustible',
+    example: 'Nafta',
+  })
   @IsOptional()
   @IsString()
   combustible?: string;
 
+  @ApiPropertyOptional({
+    description: 'Cilindrada del motor',
+    example: '1.8L',
+  })
   @IsOptional()
   @IsString()
   cilindrada?: string;
 
+  @ApiPropertyOptional({
+    description: 'Potencia del motor',
+    example: '140 HP',
+  })
   @IsOptional()
   @IsString()
   potencia?: string;
 
+  @ApiPropertyOptional({
+    description: 'Sistema de alimentación',
+    example: 'Inyección',
+  })
   @IsOptional()
   @IsString()
   alimentacion?: string;
 
+  @ApiPropertyOptional({
+    description: 'Número de cilindros',
+    example: 4,
+  })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   cilindros?: number;
 
+  @ApiPropertyOptional({
+    description: 'Número de válvulas',
+    example: 16,
+  })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   valvulas?: number;
 
   // Transmisión y chasis
+  @ApiPropertyOptional({
+    description: 'Tipo de tracción',
+    example: '4x2',
+  })
   @IsOptional()
   @IsString()
   traccion?: string;
 
+  @ApiPropertyOptional({
+    description: 'Tipo de transmisión',
+    example: 'Automática',
+  })
   @IsOptional()
   @IsString()
   transmision?: string;
 
+  @ApiPropertyOptional({
+    description: 'Número de velocidades',
+    example: 'CVT',
+  })
   @IsOptional()
   @IsString()
   velocidades?: string;
 
+  @ApiPropertyOptional({
+    description: 'Especificación de neumáticos',
+    example: '205/55 R16',
+  })
   @IsOptional()
   @IsString()
   neumaticos?: string;
 
+  @ApiPropertyOptional({
+    description: 'Tipo de frenos delanteros',
+    example: 'Disco ventilado',
+  })
   @IsOptional()
   @IsString()
   frenosDelanteros?: string;
 
+  @ApiPropertyOptional({
+    description: 'Tipo de frenos traseros',
+    example: 'Disco sólido',
+  })
   @IsOptional()
   @IsString()
   frenosTraseros?: string;
 
+  @ApiPropertyOptional({
+    description: 'Dirección asistida',
+    default: false,
+  })
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
   direccionAsistida?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Tipo de dirección asistida',
+    example: 'Eléctrica',
+  })
   @IsOptional()
   @IsString()
   direccionAsistidaTipo?: string;
 
   // Equipamiento - Confort
+  @ApiPropertyOptional({
+    description: 'Aire acondicionado',
+    default: false,
+  })
   @IsOptional()
   @IsBoolean()
   @Type(() => Boolean)
