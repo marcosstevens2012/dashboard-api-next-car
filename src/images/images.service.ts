@@ -104,6 +104,16 @@ export class ImagesService {
       throw new NotFoundException(`Image with ID ${id} not found`);
     }
 
+    // Eliminar imagen de Cloudinary si tiene publicId
+    if (image.publicId) {
+      try {
+        await cloudinary.uploader.destroy(image.publicId);
+      } catch (error) {
+        console.error('Error deleting image from Cloudinary:', error);
+        // Continuar con la eliminación de la base de datos aunque falle Cloudinary
+      }
+    }
+
     return this.prisma.image.delete({
       where: { id },
     });

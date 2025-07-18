@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { ImagesService } from '../images/images.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateVehicleDto,
@@ -10,7 +11,10 @@ import {
 
 @Injectable()
 export class VehiclesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private imagesService: ImagesService,
+  ) {}
 
   async create(createVehicleDto: CreateVehicleDto) {
     return this.prisma.vehicle.create({
@@ -316,10 +320,16 @@ export class VehiclesService {
   async remove(id: string) {
     const vehicle = await this.prisma.vehicle.findUnique({
       where: { id },
+      include: { images: true },
     });
 
     if (!vehicle) {
       throw new NotFoundException(`Vehicle with ID ${id} not found`);
+    }
+
+    // Eliminar todas las imágenes del vehículo (esto también las elimina de Cloudinary)
+    for (const image of vehicle.images) {
+      await this.imagesService.remove(image.id);
     }
 
     return this.prisma.vehicle.delete({

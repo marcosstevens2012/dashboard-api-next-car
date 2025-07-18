@@ -22,8 +22,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { ImagesService } from '../images/images.service';
 import {
   CreateVehicleDto,
@@ -416,18 +414,8 @@ export class VehiclesController {
   @Post(':id/images')
   @UseInterceptors(
     FilesInterceptor('images', 10, {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          const filename = `vehicle-${uniqueSuffix}${ext}`;
-          cb(null, filename);
-        },
-      }),
       fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
           return cb(new Error('Only image files are allowed!'), false);
         }
         cb(null, true);
@@ -465,12 +453,9 @@ export class VehiclesController {
     // Verificar que el vehículo existe
     await this.vehiclesService.findOne(vehicleId);
 
-    // Crear registros de imagen en la base de datos
+    // Subir cada imagen a Cloudinary y crear registros en la base de datos
     const imagePromises = files.map((file) =>
-      this.imagesService.create({
-        url: `/uploads/${file.filename}`,
-        vehicleId,
-      }),
+      this.imagesService.createFromFile(file, vehicleId),
     );
 
     return await Promise.all(imagePromises);
