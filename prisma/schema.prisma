@@ -9,11 +9,11 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
-  // Para producción usar PostgreSQL:
-  // provider = "postgresql"
-  // url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Para desarrollo local con SQLite (comentado):
+  // provider = "sqlite"
+  // url      = "file:./dev.db"
 }
 
 model Vehicle {
