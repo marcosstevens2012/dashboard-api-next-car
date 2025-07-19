@@ -3,8 +3,14 @@ services:
     name: nextcar-dashboard-api
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build && npx prisma generate && npx prisma migrate deploy
-    startCommand: npm run start:prod
+    region: oregon
+    buildCommand: |
+      npm ci
+      npm run build
+      npx prisma generate
+    startCommand: |
+      npx prisma migrate deploy
+      npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
@@ -16,9 +22,17 @@ services:
         generateValue: true
       - key: PORT
         value: 10000
-
+      - key: CLOUDINARY_CLOUD_NAME
+        value: ""
+      - key: CLOUDINARY_API_KEY
+        value: ""
+      - key: CLOUDINARY_API_SECRET
+        value: ""
+    healthCheckPath: /
+    
 databases:
   - name: nextcar-db
     databaseName: nextcar
     user: nextcar
     plan: free
+    region: oregon

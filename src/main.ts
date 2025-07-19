@@ -20,7 +20,11 @@ async function bootstrap() {
   app.enableCors({
     origin:
       process.env.NODE_ENV === 'production'
-        ? ['https://tu-dominio.com', 'https://www.tu-dominio.com'] // Cambiar en producción
+        ? [
+            'https://nextcar-dashboard-api.onrender.com',
+            'https://www.nextcar-dashboard-api.onrender.com',
+            // Agregar aquí el dominio del frontend cuando esté listo
+          ]
         : true, // Permitir todas las origins para desarrollo
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -73,7 +77,10 @@ async function bootstrap() {
       in: 'header',
     })
     .addServer('http://localhost:3000', 'Desarrollo')
-    .addServer('https://tu-dominio.com', 'Producción')
+    .addServer(
+      'https://nextcar-dashboard-api.onrender.com',
+      'Producción (Render)',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
