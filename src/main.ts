@@ -28,7 +28,7 @@ async function bootstrap() {
           'https://www.nextcar-dashboard.vercel.app',
           // Agregar aquí el dominio personalizado de tu frontend
           process.env.FRONTEND_URL,
-        ].filter(Boolean) // Remover valores undefined
+        ].filter((origin): origin is string | RegExp => Boolean(origin)) // Remover valores undefined con type guard
       : true; // Permitir todas las origins para desarrollo
 
   console.log('🌐 CORS Origins allowed:', allowedOrigins);

@@ -24,6 +24,7 @@ Error de CORS al hacer login desde Vercel indica que el API no permite requests 
 ### Paso 2: Dominios que ya están permitidos
 
 El API ahora acepta requests desde:
+
 - ✅ `*.vercel.app` (todos los subdominios de Vercel)
 - ✅ `nextcar-dashboard.vercel.app`
 - ✅ Tu dominio personalizado (vía FRONTEND_URL)
@@ -33,6 +34,7 @@ El API ahora acepta requests desde:
 Si necesitas probar ahora mismo, puedes usar estas URLs de ejemplo:
 
 ### Desde tu Frontend en Vercel:
+
 ```javascript
 // Usar la URL de tu API en Render
 const API_URL = 'https://nextcar-dashboard-api.onrender.com';
@@ -46,8 +48,8 @@ const response = await fetch(`${API_URL}/auth/login`, {
   credentials: 'include', // Importante para CORS
   body: JSON.stringify({
     username: 'admin',
-    password: 'tu-password'
-  })
+    password: 'tu-password',
+  }),
 });
 ```
 
@@ -56,11 +58,13 @@ const response = await fetch(`${API_URL}/auth/login`, {
 ### Error: "Access to fetch at '...' from origin '...' has been blocked by CORS policy"
 
 **Causas:**
+
 1. ❌ FRONTEND_URL no configurada en Render
 2. ❌ URL del frontend no incluida en allowed origins
 3. ❌ Falta `credentials: 'include'` en fetch
 
 **Solución:**
+
 1. ✅ Configurar FRONTEND_URL en Render Environment
 2. ✅ Reiniciar el deployment en Render
 3. ✅ Verificar que el fetch incluya `credentials: 'include'`
@@ -68,6 +72,7 @@ const response = await fetch(`${API_URL}/auth/login`, {
 ### Verificar en Logs
 
 Los logs de Render ahora mostrarán:
+
 ```
 🌐 CORS Origins allowed: [Array of allowed origins]
 ```
