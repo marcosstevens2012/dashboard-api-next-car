@@ -17,6 +17,8 @@ services:
         generateValue: true
       - key: PORT
         value: 10000
+      - key: FRONTEND_URL
+        value: https://tu-frontend.vercel.app
       - key: CLOUDINARY_CLOUD_NAME
         value: ''
       - key: CLOUDINARY_API_KEY

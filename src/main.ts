@@ -16,16 +16,26 @@ async function bootstrap() {
     }),
   );
 
+  // Configurar origins permitidos
+  const allowedOrigins =
+    process.env.NODE_ENV === 'production'
+      ? [
+          'https://nextcar-dashboard-api.onrender.com',
+          'https://www.nextcar-dashboard-api.onrender.com',
+          // Dominios de Vercel (agregar el tuyo específico)
+          /^https:\/\/.*\.vercel\.app$/,
+          'https://nextcar-dashboard.vercel.app',
+          'https://www.nextcar-dashboard.vercel.app',
+          // Agregar aquí el dominio personalizado de tu frontend
+          process.env.FRONTEND_URL,
+        ].filter(Boolean) // Remover valores undefined
+      : true; // Permitir todas las origins para desarrollo
+
+  console.log('🌐 CORS Origins allowed:', allowedOrigins);
+
   // Habilitar CORS de forma más específica
   app.enableCors({
-    origin:
-      process.env.NODE_ENV === 'production'
-        ? [
-            'https://nextcar-dashboard-api.onrender.com',
-            'https://www.nextcar-dashboard-api.onrender.com',
-            // Agregar aquí el dominio del frontend cuando esté listo
-          ]
-        : true, // Permitir todas las origins para desarrollo
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
