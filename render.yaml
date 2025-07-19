@@ -18,13 +18,13 @@ services:
       - key: PORT
         value: 10000
       - key: CLOUDINARY_CLOUD_NAME
-        value: ""
+        value: ''
       - key: CLOUDINARY_API_KEY
-        value: ""
+        value: ''
       - key: CLOUDINARY_API_SECRET
-        value: ""
+        value: ''
     healthCheckPath: /health
-    
+
 databases:
   - name: nextcar-db
     databaseName: nextcar

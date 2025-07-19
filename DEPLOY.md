@@ -3,6 +3,7 @@
 ## Pasos para Deploy desde Cero
 
 ### 1. Preparar el Repositorio
+
 ```bash
 # Asegurar que todos los cambios estén commiteados
 git add .
@@ -19,25 +20,27 @@ git push origin master
 ### 3. Configuración del Servicio Web
 
 **Configuración Básica:**
+
 - **Name**: `nextcar-dashboard-api`
 - **Region**: Oregon (US West)
 - **Branch**: `master`
 - **Runtime**: Node
-- **Build Command**: 
+- **Build Command**:
   ```bash
   npm ci && npm run build && npx prisma generate
   ```
-- **Start Command**: 
+- **Start Command**:
   ```bash
   npx prisma migrate deploy && npm run start:prod
   ```
 
 **Variables de Entorno Requeridas:**
+
 - `NODE_ENV`: `production`
 - `JWT_SECRET`: [Generar automáticamente en Render]
 - `PORT`: `10000`
 - `CLOUDINARY_CLOUD_NAME`: [Tu cloud name de Cloudinary]
-- `CLOUDINARY_API_KEY`: [Tu API key de Cloudinary]  
+- `CLOUDINARY_API_KEY`: [Tu API key de Cloudinary]
 - `CLOUDINARY_API_SECRET`: [Tu API secret de Cloudinary]
 - `DATABASE_URL`: [Se configura automáticamente con la base de datos]
 
@@ -54,6 +57,7 @@ git push origin master
 ### 5. Verificar Deploy
 
 Una vez desplegado, verificar:
+
 - ✅ **Health Check**: `https://nextcar-dashboard-api.onrender.com/health`
 - ✅ **API Docs**: `https://nextcar-dashboard-api.onrender.com/api`
 - ✅ **Public API**: `https://nextcar-dashboard-api.onrender.com/public/vehicles`
@@ -61,6 +65,7 @@ Una vez desplegado, verificar:
 ### 6. Configurar Cloudinary (Opcional)
 
 Si planeas usar upload de imágenes:
+
 1. Crear cuenta en [Cloudinary](https://cloudinary.com)
 2. Obtener credenciales del Dashboard
 3. Agregar las variables de entorno en Render
@@ -68,14 +73,17 @@ Si planeas usar upload de imágenes:
 ## 🔧 Troubleshooting
 
 ### Error en Build
+
 - Verificar que `package.json` tenga todos los scripts necesarios
 - Asegurar que `prisma` está en dependencies, no en devDependencies
 
 ### Error en Start
+
 - Verificar que `DATABASE_URL` esté configurada
 - Revisar logs en Render Dashboard
 
 ### Error 502/503
+
 - Verificar que la aplicación escuche en el puerto correcto (`process.env.PORT`)
 - Verificar que el health check responda en `/` o `/health`
 
@@ -98,5 +106,6 @@ Si planeas usar upload de imágenes:
 ## 🔐 Autenticación
 
 Para acceder a endpoints protegidos:
+
 1. POST a `/auth/login` con credenciales
 2. Usar el JWT token en header: `Authorization: Bearer <token>`
