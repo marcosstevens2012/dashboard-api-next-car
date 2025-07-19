@@ -4,13 +4,8 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: |
-      npm ci
-      npm run build
-      npx prisma generate
-    startCommand: |
-      npx prisma migrate deploy
-      npm run start:prod
+    buildCommand: npm install && npx nest build && npx prisma generate
+    startCommand: npx prisma migrate deploy && npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
@@ -28,7 +23,7 @@ services:
         value: ""
       - key: CLOUDINARY_API_SECRET
         value: ""
-    healthCheckPath: /
+    healthCheckPath: /health
     
 databases:
   - name: nextcar-db
