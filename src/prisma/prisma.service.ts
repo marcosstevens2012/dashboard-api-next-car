@@ -8,6 +8,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor() {
     super({
       log: ['query', 'info', 'warn', 'error'],
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL,
+        },
+      },
     });
   }
 
@@ -25,7 +30,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
         this.logger.log(`🗄️ Database Name: ${url.pathname.substring(1)}`);
       }
 
-      await this.$connect();
+      // Try to connect with timeout
+      const connectPromise = this.$connect();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Connection timeout')), 10000),
+      );
+
+      await Promise.race([connectPromise, timeoutPromise]);
       this.logger.log('✅ Database connected successfully');
     } catch (error: unknown) {
       const errorMessage =
