@@ -54,6 +54,10 @@ export class VehiclesService {
       queryBuilder.andWhere('vehicle.marca = :marca', { marca: filters.marca });
     }
 
+    if (filters.tipo) {
+      queryBuilder.andWhere('vehicle.tipo = :tipo', { tipo: filters.tipo });
+    }
+
     if (filters.combustible) {
       queryBuilder.andWhere('vehicle.combustible = :combustible', {
         combustible: filters.combustible,
@@ -119,6 +123,7 @@ export class VehiclesService {
       nombre: vehicle.nombre,
       marca: vehicle.marca,
       modelo: vehicle.modelo,
+      tipo: vehicle.tipo,
       anio: vehicle.anio,
       precio: vehicle.precio,
       descripcion: vehicle.descripcion,
@@ -172,6 +177,7 @@ export class VehiclesService {
       nombre: vehicle.nombre,
       marca: vehicle.marca,
       modelo: vehicle.modelo,
+      tipo: vehicle.tipo,
       anio: vehicle.anio,
       precio: vehicle.precio,
       cilindrada: vehicle.cilindrada,
@@ -217,15 +223,24 @@ export class VehiclesService {
       .orderBy('vehicle.anio', 'DESC')
       .limit(10);
 
+    const typeStatsQuery = this.vehicleRepository
+      .createQueryBuilder('vehicle')
+      .select('vehicle.tipo', 'tipo')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('vehicle.tipo')
+      .orderBy('count', 'DESC');
+
     const avgPriceQuery = this.vehicleRepository
       .createQueryBuilder('vehicle')
       .select('AVG(vehicle.precio)', 'average');
 
-    const [brandStats, yearStats, avgPriceResult] = await Promise.all([
-      brandStatsQuery.getRawMany(),
-      yearStatsQuery.getRawMany(),
-      avgPriceQuery.getRawOne(),
-    ]);
+    const [brandStats, yearStats, typeStats, avgPriceResult] =
+      await Promise.all([
+        brandStatsQuery.getRawMany(),
+        yearStatsQuery.getRawMany(),
+        typeStatsQuery.getRawMany(),
+        avgPriceQuery.getRawOne(),
+      ]);
 
     return {
       totalVehicles,
@@ -239,6 +254,10 @@ export class VehiclesService {
         acc[item.anio.toString()] = parseInt(item.count);
         return acc;
       }, {}),
+      vehiclesByType: typeStats.reduce((acc, item) => {
+        acc[item.tipo] = parseInt(item.count);
+        return acc;
+      }, {}),
     };
   }
 
@@ -248,6 +267,11 @@ export class VehiclesService {
       .createQueryBuilder('vehicle')
       .select('DISTINCT vehicle.marca', 'marca')
       .orderBy('vehicle.marca', 'ASC');
+
+    const tiposQuery = this.vehicleRepository
+      .createQueryBuilder('vehicle')
+      .select('DISTINCT vehicle.tipo', 'tipo')
+      .orderBy('vehicle.tipo', 'ASC');
 
     const combustiblesQuery = this.vehicleRepository
       .createQueryBuilder('vehicle')
@@ -272,9 +296,10 @@ export class VehiclesService {
       .select('DISTINCT vehicle.anio', 'anio')
       .orderBy('vehicle.anio', 'DESC');
 
-    const [marcas, combustibles, transmisiones, tracciones, years] =
+    const [marcas, tipos, combustibles, transmisiones, tracciones, years] =
       await Promise.all([
         marcasQuery.getRawMany(),
+        tiposQuery.getRawMany(),
         combustiblesQuery.getRawMany(),
         transmisionesQuery.getRawMany(),
         traccionesQuery.getRawMany(),
@@ -283,6 +308,7 @@ export class VehiclesService {
 
     return {
       marcas: marcas.map((v) => v.marca).filter(Boolean),
+      tipos: tipos.map((v) => v.tipo).filter(Boolean),
       combustibles: combustibles.map((v) => v.combustible).filter(Boolean),
       transmisiones: transmisiones.map((v) => v.transmision).filter(Boolean),
       tracciones: tracciones.map((v) => v.traccion).filter(Boolean),

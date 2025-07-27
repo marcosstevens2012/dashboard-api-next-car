@@ -29,6 +29,7 @@ import {
   UpdateVehicleDto,
 } from '../vehicles/dto/vehicle.dto';
 import { VehiclesService } from '../vehicles/vehicles.service';
+import { VideosService } from '../videos/videos.service';
 
 @ApiTags('dashboard')
 @ApiBearerAuth()
@@ -39,6 +40,7 @@ export class DashboardController {
     private readonly vehiclesService: VehiclesService,
     private readonly contactsService: ContactsService,
     private readonly imagesService: ImagesService,
+    private readonly videosService: VideosService,
   ) {}
 
   // === ESTADÍSTICAS DASHBOARD ===
@@ -165,6 +167,93 @@ export class DashboardController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteImage(@Param('id') id: string) {
     return await this.imagesService.remove(id);
+  }
+
+  // === GESTIÓN DE VIDEOS ===
+
+  @Post('vehicles/:id/videos')
+  @UseInterceptors(FilesInterceptor('videos'))
+  @ApiOperation({
+    summary: 'Subir videos para un vehículo (Admin)',
+    description:
+      'Sube uno o más videos a Cloudinary para un vehículo específico',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del vehículo',
+    example: 'clz123abc456',
+  })
+  @ApiResponse({ status: 201, description: 'Videos subidos exitosamente.' })
+  @ApiResponse({ status: 400, description: 'Archivos inválidos.' })
+  @ApiResponse({ status: 404, description: 'Vehículo no encontrado.' })
+  @ApiResponse({ status: 401, description: 'No autorizado.' })
+  async uploadVideos(
+    @Param('id') vehicleId: string,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    // Verificar que el vehículo existe
+    await this.vehiclesService.findOne(vehicleId);
+
+    // Subir cada video a Cloudinary y crear registros en la base de datos
+    const videoPromises = files.map((file) =>
+      this.videosService.createFromFile(file, vehicleId),
+    );
+
+    return await Promise.all(videoPromises);
+  }
+
+  @Get('videos')
+  @ApiOperation({
+    summary: 'Obtener todos los videos (Admin)',
+    description: 'Lista todos los videos de vehículos en el sistema',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de videos obtenida exitosamente.',
+  })
+  @ApiResponse({ status: 401, description: 'No autorizado.' })
+  async getAllVideos() {
+    return await this.videosService.findAll();
+  }
+
+  @Get('videos/vehicle/:vehicleId')
+  @ApiOperation({
+    summary: 'Obtener videos por ID de vehículo (Admin)',
+    description: 'Obtiene todos los videos asociados a un vehículo específico',
+  })
+  @ApiParam({
+    name: 'vehicleId',
+    description: 'ID del vehículo',
+    example: 'clz123abc456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Videos del vehículo obtenidos exitosamente.',
+  })
+  @ApiResponse({ status: 401, description: 'No autorizado.' })
+  async getVideosByVehicle(@Param('vehicleId') vehicleId: string) {
+    return await this.videosService.findByVehicleId(vehicleId);
+  }
+
+  @Delete('videos/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Eliminar video (Admin)',
+    description: 'Elimina un video del sistema y de Cloudinary',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID único del video a eliminar',
+    example: 'vid123',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Video eliminado exitosamente.',
+  })
+  @ApiResponse({ status: 404, description: 'Video no encontrado.' })
+  @ApiResponse({ status: 401, description: 'No autorizado.' })
+  async deleteVideo(@Param('id') id: string) {
+    return await this.videosService.remove(id);
   }
 
   // === GESTIÓN DE CONTACTOS (ADMIN) ===

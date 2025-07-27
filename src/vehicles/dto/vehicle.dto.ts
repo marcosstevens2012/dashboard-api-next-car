@@ -40,13 +40,14 @@ export class VehiclePaginationDto {
 
   @ApiPropertyOptional({
     description: 'Campo para ordenar',
-    enum: ['nombre', 'marca', 'precio', 'anio', 'createdAt'],
+    enum: ['nombre', 'marca', 'tipo', 'precio', 'anio', 'createdAt'],
     default: 'createdAt',
     example: 'createdAt',
   })
   @IsOptional()
   @IsString()
-  sortBy?: 'nombre' | 'marca' | 'precio' | 'anio' | 'createdAt' = 'createdAt';
+  sortBy?: 'nombre' | 'marca' | 'tipo' | 'precio' | 'anio' | 'createdAt' =
+    'createdAt';
 
   @ApiPropertyOptional({
     description: 'Orden de clasificación',
@@ -75,6 +76,15 @@ export class VehicleFiltersDto {
   @IsOptional()
   @IsString()
   marca?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filtrar por tipo de vehículo',
+    enum: ['auto', 'moto', 'camioneta', 'suv', 'pickup', 'comercial'],
+    example: 'auto',
+  })
+  @IsOptional()
+  @IsString()
+  tipo?: string;
 
   @ApiPropertyOptional({
     description: 'Filtrar por tipo de combustible',
@@ -149,6 +159,15 @@ export class CreateVehicleDto {
   @IsString()
   @IsNotEmpty()
   modelo: string;
+
+  @ApiProperty({
+    description: 'Tipo de vehículo',
+    enum: ['auto', 'moto', 'camioneta', 'suv', 'pickup', 'comercial'],
+    example: 'auto',
+  })
+  @IsString()
+  @IsNotEmpty()
+  tipo: string;
 
   @ApiProperty({
     description: 'Año del vehículo',
@@ -536,6 +555,11 @@ export class UpdateVehicleDto {
   @IsString()
   @IsNotEmpty()
   modelo?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  tipo?: string;
 
   @IsOptional()
   @IsNumber()

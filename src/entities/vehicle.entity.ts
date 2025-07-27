@@ -23,6 +23,9 @@ export class Vehicle {
   @Column()
   modelo: string;
 
+  @Column({ default: 'auto' })
+  tipo: string;
+
   @Column('int')
   anio: number;
 
