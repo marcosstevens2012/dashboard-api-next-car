@@ -1,7 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { PrismaService } from '../prisma/prisma.service';
+import { Repository } from 'typeorm';
+import { User } from '../entities/user.entity';
 
 export interface LoginDto {
   username: string;
@@ -20,17 +22,22 @@ export interface JwtPayload {
 export class AuthService {
   constructor(
     private jwtService: JwtService,
-    private prisma: PrismaService,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
-  async validateUser(username: string, password: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({
+  async validateUser(
+    username: string,
+    password: string,
+  ): Promise<Omit<User, 'password'> | null> {
+    const user = await this.userRepository.findOne({
       where: { username },
     });
 
     if (user && user.isActive) {
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (isPasswordValid) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password: _, ...result } = user;
         return result;
       }
@@ -44,11 +51,19 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload: JwtPayload = {
+    const payload = {
       username: user.username,
       sub: user.id,
       role: user.role,
     };
+
+    const secret =
+      process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    console.log('🔑 Login - JWT secret length:', secret.length);
+    console.log(
+      '🎫 Login - Creating JWT token with payload:',
+      JSON.stringify(payload, null, 2),
+    );
 
     return {
       access_token: this.jwtService.sign(payload),
@@ -60,22 +75,36 @@ export class AuthService {
     };
   }
 
-  async validateToken(payload: JwtPayload) {
-    const user = await this.prisma.user.findUnique({
+  async validateToken(userId: string) {
+    console.log('🔍 Validating JWT for user ID:', userId);
+
+    // Validate UUID format before querying database
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    if (!uuidRegex.test(userId)) {
+      console.warn(`❌ Invalid UUID format in JWT payload: ${userId}`);
+      return null;
+    }
+
+    console.log('✅ UUID format is valid, querying database');
+
+    const user = await this.userRepository.findOne({
       where: {
-        id: payload.sub,
-        username: payload.username,
+        id: userId,
         isActive: true,
       },
     });
 
     if (user) {
+      console.log('✅ User found and validated');
       return {
         id: user.id,
         username: user.username,
         role: user.role,
       };
     }
+    console.log('❌ User not found or inactive');
     return null;
   }
 
@@ -83,60 +112,61 @@ export class AuthService {
   async createUser(username: string, password: string, role: string = 'admin') {
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    return this.prisma.user.create({
-      data: {
-        username,
-        password: hashedPassword,
-        role,
-      },
-      select: {
-        id: true,
-        username: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-      },
-    });
+    const userData = {
+      username,
+      password: hashedPassword,
+      role,
+    };
+
+    const user = this.userRepository.create(userData);
+    const savedUser = await this.userRepository.save(user);
+
+    return {
+      id: savedUser.id,
+      username: savedUser.username,
+      role: savedUser.role,
+      isActive: savedUser.isActive,
+      createdAt: savedUser.createdAt,
+    };
   }
 
   async updatePassword(userId: string, newPassword: string) {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-      select: {
-        id: true,
-        username: true,
-        role: true,
-        updatedAt: true,
-      },
-    });
+    await this.userRepository.update(userId, { password: hashedPassword });
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    return {
+      id: user!.id,
+      username: user!.username,
+      role: user!.role,
+      updatedAt: user!.updatedAt,
+    };
   }
 
   async deactivateUser(userId: string) {
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { isActive: false },
-      select: {
-        id: true,
-        username: true,
-        isActive: true,
-      },
-    });
+    await this.userRepository.update(userId, { isActive: false });
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    return {
+      id: user!.id,
+      username: user!.username,
+      isActive: user!.isActive,
+    };
   }
 
   async findAllUsers() {
-    return this.prisma.user.findMany({
-      select: {
-        id: true,
-        username: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
+    const users = await this.userRepository.find({
+      order: { createdAt: 'DESC' },
     });
+
+    return users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    }));
   }
 }

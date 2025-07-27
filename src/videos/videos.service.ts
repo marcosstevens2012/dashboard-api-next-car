@@ -2,21 +2,22 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { v2 as cloudinary } from 'cloudinary';
 import { Repository } from 'typeorm';
-import { Image } from '../entities/image.entity';
-import { CreateImageDto } from './dto/image.dto';
+import { Video } from '../entities/video.entity';
+import { CreateVideoDto } from './dto/video.dto';
 
 interface CloudinaryResult {
   secure_url: string;
   public_id: string;
   resource_type: string;
   format: string;
+  duration?: number;
 }
 
 @Injectable()
-export class ImagesService {
+export class VideosService {
   constructor(
-    @InjectRepository(Image)
-    private imageRepository: Repository<Image>,
+    @InjectRepository(Video)
+    private videoRepository: Repository<Video>,
   ) {
     // Configurar Cloudinary
     cloudinary.config({
@@ -33,10 +34,13 @@ export class ImagesService {
       cloudinary.uploader
         .upload_stream(
           {
-            resource_type: 'auto',
-            folder: 'nextcar-vehicles',
-            quality: 'auto:best',
-            format: 'webp',
+            resource_type: 'video',
+            folder: 'nextcar-vehicles/videos',
+            quality: 'auto:good',
+            transformation: [
+              { width: 1280, height: 720, crop: 'limit' },
+              { format: 'mp4' },
+            ],
           },
           (error, result) => {
             if (error) {
@@ -50,74 +54,76 @@ export class ImagesService {
     });
   }
 
-  async create(createImageDto: CreateImageDto) {
-    const image = this.imageRepository.create(createImageDto);
-    return await this.imageRepository.save(image);
+  async create(createVideoDto: CreateVideoDto) {
+    const video = this.videoRepository.create(createVideoDto);
+    return await this.videoRepository.save(video);
   }
 
   async createFromFile(file: Express.Multer.File, vehicleId: string) {
     try {
       const cloudinaryResult = await this.uploadToCloudinary(file);
 
-      const imageData = {
+      const videoData = {
         url: cloudinaryResult.secure_url,
         publicId: cloudinaryResult.public_id,
         vehicleId,
         filename: file.originalname,
       };
 
-      const image = this.imageRepository.create(imageData);
-      return await this.imageRepository.save(image);
+      const video = this.videoRepository.create(videoData);
+      return await this.videoRepository.save(video);
     } catch (error) {
       throw new Error(
-        `Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to upload video: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }
 
   async findAll() {
-    return await this.imageRepository.find({
+    return await this.videoRepository.find({
       relations: ['vehicle'],
     });
   }
 
   async findOne(id: string) {
-    const image = await this.imageRepository.findOne({
+    const video = await this.videoRepository.findOne({
       where: { id },
       relations: ['vehicle'],
     });
 
-    if (!image) {
-      throw new NotFoundException(`Image with ID ${id} not found`);
+    if (!video) {
+      throw new NotFoundException(`Video with ID ${id} not found`);
     }
 
-    return image;
+    return video;
   }
 
   async remove(id: string) {
-    const image = await this.imageRepository.findOne({
+    const video = await this.videoRepository.findOne({
       where: { id },
     });
 
-    if (!image) {
-      throw new NotFoundException(`Image with ID ${id} not found`);
+    if (!video) {
+      throw new NotFoundException(`Video with ID ${id} not found`);
     }
 
-    // Eliminar imagen de Cloudinary si tiene publicId
-    if (image.publicId) {
+    // Eliminar video de Cloudinary si tiene publicId
+    if (video.publicId) {
       try {
-        await cloudinary.uploader.destroy(image.publicId);
+        await cloudinary.uploader.destroy(video.publicId, {
+          resource_type: 'video',
+        });
       } catch (error) {
-        console.error('Error deleting image from Cloudinary:', error);
+        console.error('Error deleting video from Cloudinary:', error);
         // Continuar con la eliminación de la base de datos aunque falle Cloudinary
       }
     }
 
-    return await this.imageRepository.remove(image);
+    return await this.videoRepository.remove(video);
   }
 
   async findByVehicleId(vehicleId: string) {
-    return await this.imageRepository.find({
+    return await this.videoRepository.find({
       where: { vehicleId },
     });
   }

@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -10,14 +11,39 @@ import { AuthModule } from './auth/auth.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ImagesModule } from './images/images.module';
-import { PrismaModule } from './prisma/prisma.module';
 import { PublicModule } from './public/public.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
+import { VideosModule } from './videos/videos.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    // TypeORM configuration para Supabase PostgreSQL
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        url: configService.get('DATABASE_URL'),
+        // Configuración alternativa si prefieres usar variables separadas:
+        // host: configService.get('DATABASE_HOST'),
+        // port: parseInt(configService.get('DATABASE_PORT') || '5432', 10),
+        // username: configService.get('DB_USERNAME'),
+        // password: configService.get('DB_PASSWORD'),
+        // database: configService.get('DB_DATABASE'),
+        autoLoadEntities: true,
+        synchronize: configService.get('NODE_ENV') === 'development',
+        ssl:
+          configService.get('NODE_ENV') === 'production'
+            ? { rejectUnauthorized: false }
+            : false,
+        logging:
+          configService.get('NODE_ENV') === 'development'
+            ? ['query', 'error']
+            : ['error'],
+      }),
+      inject: [ConfigService],
     }),
     // Rate limiting global
     ThrottlerModule.forRoot([
@@ -41,13 +67,13 @@ import { VehiclesModule } from './vehicles/vehicles.module';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
     }),
-    PrismaModule,
     AuthModule,
     PublicModule,
     DashboardModule,
     // Mantener módulos originales para compatibilidad
     VehiclesModule,
     ImagesModule,
+    VideosModule,
     ContactsModule,
   ],
   controllers: [AppController],

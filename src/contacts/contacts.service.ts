@@ -1,27 +1,29 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Contact } from '../entities/contact.entity';
 import { CreateContactDto } from './dto/contact.dto';
 
 @Injectable()
 export class ContactsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(Contact)
+    private contactRepository: Repository<Contact>,
+  ) {}
 
   async create(createContactDto: CreateContactDto) {
-    return this.prisma.contact.create({
-      data: createContactDto,
-    });
+    const contact = this.contactRepository.create(createContactDto);
+    return await this.contactRepository.save(contact);
   }
 
   async findAll() {
-    return this.prisma.contact.findMany({
-      orderBy: {
-        creadoEn: 'desc',
-      },
+    return await this.contactRepository.find({
+      order: { creadoEn: 'DESC' },
     });
   }
 
   async findOne(id: string) {
-    const contact = await this.prisma.contact.findUnique({
+    const contact = await this.contactRepository.findOne({
       where: { id },
     });
 
@@ -33,7 +35,7 @@ export class ContactsService {
   }
 
   async remove(id: string) {
-    const contact = await this.prisma.contact.findUnique({
+    const contact = await this.contactRepository.findOne({
       where: { id },
     });
 
@@ -41,8 +43,6 @@ export class ContactsService {
       throw new NotFoundException(`Contact with ID ${id} not found`);
     }
 
-    return this.prisma.contact.delete({
-      where: { id },
-    });
+    return await this.contactRepository.remove(contact);
   }
 }

@@ -23,6 +23,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ImagesService } from '../images/images.service';
+import { VideosService } from '../videos/videos.service';
 import {
   CreateVehicleDto,
   HighlightVehicleDto,
@@ -38,6 +39,7 @@ export class VehiclesController {
   constructor(
     private readonly vehiclesService: VehiclesService,
     private readonly imagesService: ImagesService,
+    private readonly videosService: VideosService,
   ) {}
 
   @Post()
@@ -459,5 +461,51 @@ export class VehiclesController {
     );
 
     return await Promise.all(imagePromises);
+  }
+
+  @Post(':id/upload-videos')
+  @UseInterceptors(FilesInterceptor('videos'))
+  @ApiOperation({
+    summary: 'Subir videos para un vehículo',
+    description:
+      'Sube uno o más videos a Cloudinary para un vehículo específico',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del vehículo',
+    example: 'clz123abc456',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Archivos de video',
+    schema: {
+      type: 'object',
+      properties: {
+        videos: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Videos subidos exitosamente.' })
+  @ApiResponse({ status: 400, description: 'Archivos inválidos.' })
+  @ApiResponse({ status: 404, description: 'Vehículo no encontrado.' })
+  async uploadVideos(
+    @Param('id') vehicleId: string,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    // Verificar que el vehículo existe
+    await this.vehiclesService.findOne(vehicleId);
+
+    // Subir cada video a Cloudinary y crear registros en la base de datos
+    const videoPromises = files.map((file) =>
+      this.videosService.createFromFile(file, vehicleId),
+    );
+
+    return await Promise.all(videoPromises);
   }
 }
