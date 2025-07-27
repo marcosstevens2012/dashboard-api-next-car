@@ -18,6 +18,8 @@ export interface JwtPayload {
   exp?: number;
 }
 
+const JWT_SECRET = process.env.JWT_SECRET;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -56,14 +58,6 @@ export class AuthService {
       sub: user.id,
       role: user.role,
     };
-
-    const secret =
-      process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-    console.log('🔑 Login - JWT secret length:', secret.length);
-    console.log(
-      '🎫 Login - Creating JWT token with payload:',
-      JSON.stringify(payload, null, 2),
-    );
 
     return {
       access_token: this.jwtService.sign(payload),

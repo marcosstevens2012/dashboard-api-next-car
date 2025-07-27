@@ -7,12 +7,15 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 
+// Define a single constant secret to ensure consistency
+const JWT_SECRET = process.env.JWT_SECRET;
+
 @Module({
   imports: [
     PassportModule,
     TypeOrmModule.forFeature([User]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+      secret: JWT_SECRET,
       signOptions: { expiresIn: '24h' },
     }),
   ],

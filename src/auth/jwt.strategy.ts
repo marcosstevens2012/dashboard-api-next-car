@@ -3,20 +3,18 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthService } from './auth.service';
 
+const JWT_SECRET = process.env.JWT_SECRET;
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
-    const secret =
-      process.env.JWT_SECRET || 'your-secret-key-change-in-production';
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: secret,
+      secretOrKey:
+        JWT_SECRET ||
+        'test-secret-key-for-development-only-change-in-production',
     });
-    console.log(
-      '🔐 JWT Strategy initialized with secret:',
-      secret ? 'Secret is set' : 'No secret set',
-    );
   }
 
   async validate(payload: any) {
