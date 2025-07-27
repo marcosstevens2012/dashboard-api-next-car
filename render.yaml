@@ -4,8 +4,8 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: npm install && npx nest build && npx prisma generate
-    startCommand: echo "DATABASE_URL=$DATABASE_URL" && npx prisma db ping && npx prisma migrate deploy && npm run start:prod
+    buildCommand: npm install && npm run build
+    startCommand: echo "DATABASE_URL=$DATABASE_URL" && npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production

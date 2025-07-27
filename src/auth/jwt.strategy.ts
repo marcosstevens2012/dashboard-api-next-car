@@ -1,29 +1,31 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { AuthService } from './auth.service';
-
-const JWT_SECRET = process.env.JWT_SECRET;
+import { AuthService, JwtPayload } from './auth.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private authService: AuthService) {
+  constructor(
+    private authService: AuthService,
+    private configService: ConfigService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey:
-        JWT_SECRET ||
+        configService.get<string>('JWT_SECRET') ||
         'test-secret-key-for-development-only-change-in-production',
     });
   }
 
-  async validate(payload: any) {
+  async validate(payload: JwtPayload) {
     console.log(
       '🔍 JWT Strategy validate called with payload:',
       JSON.stringify(payload, null, 2),
     );
     try {
-      const userId = payload?.sub as string;
+      const userId = payload.sub;
       if (!userId) {
         console.log('❌ No user ID in JWT payload');
         throw new UnauthorizedException('Invalid token payload');

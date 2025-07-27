@@ -53,6 +53,7 @@ export class AuthController {
     try {
       return await this.authService.login(loginDto);
     } catch (error) {
+      console.error('Login error:', error);
       throw new UnauthorizedException('Invalid credentials');
     }
   }

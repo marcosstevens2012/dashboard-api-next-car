@@ -18,8 +18,6 @@ export interface JwtPayload {
   exp?: number;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
 @Injectable()
 export class AuthService {
   constructor(
