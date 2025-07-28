@@ -12,6 +12,7 @@ import { ContactsModule } from './contacts/contacts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ImagesModule } from './images/images.module';
 import { PublicModule } from './public/public.module';
+import { VehicleSalesModule } from './vehicle-sales/vehicle-sales.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 import { VideosModule } from './videos/videos.module';
 
@@ -72,6 +73,7 @@ import { VideosModule } from './videos/videos.module';
     DashboardModule,
     // Mantener módulos originales para compatibilidad
     VehiclesModule,
+    VehicleSalesModule,
     ImagesModule,
     VideosModule,
     ContactsModule,
