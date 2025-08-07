@@ -1,3 +1,12 @@
+/**
+ * SEEDS DESHABILITADOS
+ * Este archivo contiene los seeds de la base de datos, pero están deshabilitados.
+ * Para habilitarlos nuevamente:
+ * 1. Descomentar el script "db:seed" en package.json
+ * 2. Descomentar la tarea en .vscode/tasks.json
+ * 3. Descomentar la línea en setup.sh
+ */
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { AuthService } from './auth/auth.service';

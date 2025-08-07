@@ -37,7 +37,7 @@ npm run db:generate
 
 # Poblar base de datos con datos de prueba
 echo "🌱 Poblando base de datos con datos de prueba..."
-npm run db:seed
+# npm run db:seed  # COMENTADO - Seeds deshabilitados
 
 # Construir la aplicación
 echo "🏗️ Construyendo la aplicación..."

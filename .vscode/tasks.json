@@ -20,12 +20,12 @@
       "type": "shell",
       "command": "npm run db:migrate",
       "group": "build"
-    },
-    {
-      "label": "Database: seed",
-      "type": "shell",
-      "command": "npm run db:seed",
-      "group": "build"
     }
+    // {
+    //   "label": "Database: seed",
+    //   "type": "shell",
+    //   "command": "npm run db:seed",
+    //   "group": "build"
+    // } // COMENTADO - Seeds deshabilitados
   ]
 }
