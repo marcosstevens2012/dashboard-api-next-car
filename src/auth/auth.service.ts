@@ -1,13 +1,33 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 
 export interface LoginDto {
   username: string;
   password: string;
+}
+
+export interface ChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ForgotPasswordDto {
+  username: string;
+}
+
+export interface ResetPasswordDto {
+  token: string;
+  newPassword: string;
 }
 
 export interface JwtPayload {
@@ -160,5 +180,100 @@ export class AuthService {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     }));
+  }
+
+  // Métodos para cambio y recuperación de contraseña
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Verificar contraseña actual
+    const isCurrentPasswordValid = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      user.password,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new BadRequestException('Contraseña actual incorrecta');
+    }
+
+    // Actualizar contraseña
+    const hashedNewPassword = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      10,
+    );
+    await this.userRepository.update(userId, { password: hashedNewPassword });
+
+    return {
+      message: 'Contraseña actualizada exitosamente',
+      timestamp: new Date(),
+    };
+  }
+
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const user = await this.userRepository.findOne({
+      where: { username: forgotPasswordDto.username },
+    });
+
+    if (!user) {
+      // Por seguridad, no revelamos si el usuario existe o no
+      return {
+        message:
+          'Si el usuario existe, se enviará un email con instrucciones para recuperar la contraseña',
+      };
+    }
+
+    // Generar token de reset
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpires = new Date(Date.now() + 30 * 60 * 1000); // 30 minutos
+
+    await this.userRepository.update(user.id, {
+      resetPasswordToken: resetToken,
+      resetPasswordExpires: resetTokenExpires,
+    });
+
+    // TODO: Aquí deberías implementar el envío de email
+    // Por ahora, devolvemos el token en la respuesta (solo para desarrollo)
+    return {
+      message:
+        'Si el usuario existe, se enviará un email con instrucciones para recuperar la contraseña',
+      // En producción, eliminar esta línea:
+      developmentToken: resetToken,
+    };
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const user = await this.userRepository.findOne({
+      where: {
+        resetPasswordToken: resetPasswordDto.token,
+      },
+    });
+
+    if (
+      !user ||
+      !user.resetPasswordExpires ||
+      user.resetPasswordExpires < new Date()
+    ) {
+      throw new BadRequestException('Token de reset inválido o expirado');
+    }
+
+    // Actualizar contraseña y limpiar token
+    const hashedNewPassword = await bcrypt.hash(
+      resetPasswordDto.newPassword,
+      10,
+    );
+    await this.userRepository.update(user.id, {
+      password: hashedNewPassword,
+      resetPasswordToken: undefined,
+      resetPasswordExpires: undefined,
+    });
+
+    return {
+      message: 'Contraseña restablecida exitosamente',
+      timestamp: new Date(),
+    };
   }
 }
