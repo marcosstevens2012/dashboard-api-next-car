@@ -38,6 +38,7 @@ export class VehiclesService {
     const queryBuilder = this.vehicleRepository
       .createQueryBuilder('vehicle')
       .leftJoinAndSelect('vehicle.images', 'images')
+      .leftJoinAndSelect('vehicle.videos', 'videos')
       .orderBy(`vehicle.${sortBy}`, sortOrder.toUpperCase() as 'ASC' | 'DESC')
       .skip(skip)
       .take(limit);
@@ -136,6 +137,8 @@ export class VehiclesService {
       traccion: vehicle.traccion,
       // Primera imagen
       imagen: vehicle.images[0]?.url || null,
+      // Videos
+      videos: vehicle.videos || [],
       createdAt: vehicle.createdAt,
       updatedAt: vehicle.updatedAt,
     }));
@@ -164,7 +167,7 @@ export class VehiclesService {
     const [vehicles, total] = await Promise.all([
       this.vehicleRepository.find({
         where: { destacado: true },
-        relations: ['images'],
+        relations: ['images', 'videos'],
         order: { createdAt: 'DESC' },
         skip,
         take: limit,
@@ -186,6 +189,7 @@ export class VehiclesService {
       transmision: vehicle.transmision,
       traccion: vehicle.traccion,
       imagen: vehicle.images[0]?.url || null,
+      videos: vehicle.videos || [],
     }));
 
     return {
@@ -319,7 +323,7 @@ export class VehiclesService {
   // Método original para dashboard (sin filtros)
   async findAll() {
     return await this.vehicleRepository.find({
-      relations: ['images'],
+      relations: ['images', 'videos'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -327,7 +331,7 @@ export class VehiclesService {
   async findOne(id: string) {
     const vehicle = await this.vehicleRepository.findOne({
       where: { id },
-      relations: ['images'],
+      relations: ['images', 'videos'],
     });
 
     if (!vehicle) {
@@ -349,14 +353,14 @@ export class VehiclesService {
     await this.vehicleRepository.update(id, updateVehicleDto);
     return await this.vehicleRepository.findOne({
       where: { id },
-      relations: ['images'],
+      relations: ['images', 'videos'],
     });
   }
 
   async remove(id: string) {
     const vehicle = await this.vehicleRepository.findOne({
       where: { id },
-      relations: ['images'],
+      relations: ['images', 'videos'],
     });
 
     if (!vehicle) {
@@ -385,7 +389,7 @@ export class VehiclesService {
 
     return await this.vehicleRepository.findOne({
       where: { id },
-      relations: ['images'],
+      relations: ['images', 'videos'],
     });
   }
 }
