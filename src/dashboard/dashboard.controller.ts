@@ -133,9 +133,35 @@ export class DashboardController {
   @UseInterceptors(
     FilesInterceptor('images', 10, {
       fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
-          return cb(new Error('Only image files are allowed!'), false);
+        console.log('File filter - originalname:', file.originalname);
+        console.log('File filter - mimetype:', file.mimetype);
+        console.log('File filter - fieldname:', file.fieldname);
+
+        // Verificar que el archivo tiene originalname
+        if (!file.originalname) {
+          return cb(new Error('File must have a valid filename!'), false);
         }
+
+        // Verificar extensión
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+          return cb(
+            new Error(
+              `Only image files are allowed! Received: ${file.originalname}`,
+            ),
+            false,
+          );
+        }
+
+        // Verificar MIME type como seguridad adicional
+        if (!file.mimetype.startsWith('image/')) {
+          return cb(
+            new Error(
+              `Invalid file type! Expected image, received: ${file.mimetype}`,
+            ),
+            false,
+          );
+        }
+
         cb(null, true);
       },
       limits: {
