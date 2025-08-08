@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { Repository } from 'typeorm';
+import { EmailService } from '../email/email.service';
 import { User } from '../entities/user.entity';
 
 export interface LoginDto {
@@ -22,7 +23,7 @@ export interface ChangePasswordDto {
 }
 
 export interface ForgotPasswordDto {
-  username: string;
+  email: string;
 }
 
 export interface ResetPasswordDto {
@@ -42,6 +43,7 @@ export interface JwtPayload {
 export class AuthService {
   constructor(
     private jwtService: JwtService,
+    private emailService: EmailService,
     @InjectRepository(User)
     private userRepository: Repository<User>,
   ) {}
@@ -121,11 +123,17 @@ export class AuthService {
   }
 
   // Métodos adicionales para gestión de usuarios
-  async createUser(username: string, password: string, role: string = 'admin') {
+  async createUser(
+    username: string,
+    email: string,
+    password: string,
+    role: string = 'admin',
+  ) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const userData = {
       username,
+      email,
       password: hashedPassword,
       role,
     };
@@ -136,6 +144,7 @@ export class AuthService {
     return {
       id: savedUser.id,
       username: savedUser.username,
+      email: savedUser.email,
       role: savedUser.role,
       isActive: savedUser.isActive,
       createdAt: savedUser.createdAt,
@@ -175,6 +184,7 @@ export class AuthService {
     return users.map((user) => ({
       id: user.id,
       username: user.username,
+      email: user.email,
       role: user.role,
       isActive: user.isActive,
       createdAt: user.createdAt,
@@ -215,14 +225,14 @@ export class AuthService {
 
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const user = await this.userRepository.findOne({
-      where: { username: forgotPasswordDto.username },
+      where: { email: forgotPasswordDto.email },
     });
 
-    if (!user) {
+    if (!user || !user.email) {
       // Por seguridad, no revelamos si el usuario existe o no
       return {
         message:
-          'Si el usuario existe, se enviará un email con instrucciones para recuperar la contraseña',
+          'Si el email existe, se enviará un email con instrucciones para recuperar la contraseña',
       };
     }
 
@@ -235,14 +245,28 @@ export class AuthService {
       resetPasswordExpires: resetTokenExpires,
     });
 
-    // TODO: Aquí deberías implementar el envío de email
-    // Por ahora, devolvemos el token en la respuesta (solo para desarrollo)
-    return {
-      message:
-        'Si el usuario existe, se enviará un email con instrucciones para recuperar la contraseña',
-      // En producción, eliminar esta línea:
-      developmentToken: resetToken,
-    };
+    // Enviar email de recuperación
+    try {
+      await this.emailService.sendPasswordResetEmail(user.email, resetToken);
+
+      return {
+        message:
+          'Si el email existe, se enviará un email con instrucciones para recuperar la contraseña',
+      };
+    } catch (error) {
+      console.error('Error enviando email de recuperación:', error);
+
+      // En caso de error al enviar email, devolvemos el mensaje genérico
+      // pero también podríamos limpiar el token si queremos
+      return {
+        message:
+          'Si el email existe, se enviará un email con instrucciones para recuperar la contraseña',
+        // En desarrollo, mostrar el token si no se puede enviar email
+        ...(process.env.NODE_ENV === 'development' && {
+          developmentToken: resetToken,
+        }),
+      };
+    }
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
