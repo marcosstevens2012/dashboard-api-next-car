@@ -22,6 +22,9 @@ export class Image {
   @Column({ nullable: true })
   filename?: string;
 
+  @Column({ default: false })
+  isPrincipal: boolean;
+
   @Column()
   vehicleId: string;
 

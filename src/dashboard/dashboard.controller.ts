@@ -195,6 +195,37 @@ export class DashboardController {
     return await this.imagesService.remove(id);
   }
 
+  @Patch('images/:id/principal')
+  @ApiOperation({
+    summary: 'Marcar imagen como principal (Admin)',
+    description:
+      'Marca una imagen específica como la imagen principal del vehículo. Solo puede haber una imagen principal por vehículo.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID único de la imagen a marcar como principal',
+    example: '5d10950d-09b9-4452-804d-e0e7876a1db7',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Imagen marcada como principal exitosamente.',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        url: { type: 'string' },
+        isPrincipal: { type: 'boolean', example: true },
+        vehicleId: { type: 'string' },
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Imagen no encontrada.' })
+  @ApiResponse({ status: 401, description: 'No autorizado.' })
+  async setPrincipalImage(@Param('id') id: string) {
+    return await this.imagesService.setPrincipal(id);
+  }
+
   // === GESTIÓN DE VIDEOS ===
 
   @Post('vehicles/:id/videos')

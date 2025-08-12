@@ -40,6 +40,8 @@ export class VehiclesService {
       .leftJoinAndSelect('vehicle.images', 'images')
       .leftJoinAndSelect('vehicle.videos', 'videos')
       .orderBy(`vehicle.${sortBy}`, sortOrder.toUpperCase() as 'ASC' | 'DESC')
+      .addOrderBy('images.isPrincipal', 'DESC')
+      .addOrderBy('images.createdAt', 'ASC')
       .skip(skip)
       .take(limit);
 
@@ -322,17 +324,25 @@ export class VehiclesService {
 
   // Método original para dashboard (sin filtros)
   async findAll() {
-    return await this.vehicleRepository.find({
-      relations: ['images', 'videos'],
-      order: { createdAt: 'DESC' },
-    });
+    return await this.vehicleRepository
+      .createQueryBuilder('vehicle')
+      .leftJoinAndSelect('vehicle.images', 'images')
+      .leftJoinAndSelect('vehicle.videos', 'videos')
+      .orderBy('vehicle.createdAt', 'DESC')
+      .addOrderBy('images.isPrincipal', 'DESC')
+      .addOrderBy('images.createdAt', 'ASC')
+      .getMany();
   }
 
   async findOne(id: string) {
-    const vehicle = await this.vehicleRepository.findOne({
-      where: { id },
-      relations: ['images', 'videos'],
-    });
+    const vehicle = await this.vehicleRepository
+      .createQueryBuilder('vehicle')
+      .leftJoinAndSelect('vehicle.images', 'images')
+      .leftJoinAndSelect('vehicle.videos', 'videos')
+      .where('vehicle.id = :id', { id })
+      .orderBy('images.isPrincipal', 'DESC')
+      .addOrderBy('images.createdAt', 'ASC')
+      .getOne();
 
     if (!vehicle) {
       throw new NotFoundException(`Vehicle with ID ${id} not found`);

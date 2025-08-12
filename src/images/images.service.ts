@@ -119,6 +119,32 @@ export class ImagesService {
   async findByVehicleId(vehicleId: string) {
     return await this.imageRepository.find({
       where: { vehicleId },
+      order: { isPrincipal: 'DESC', createdAt: 'ASC' },
+    });
+  }
+
+  async setPrincipal(id: string) {
+    const image = await this.imageRepository.findOne({
+      where: { id },
+      relations: ['vehicle'],
+    });
+
+    if (!image) {
+      throw new NotFoundException(`Image with ID ${id} not found`);
+    }
+
+    // Primero, quitar la marca principal de todas las imágenes del mismo vehículo
+    await this.imageRepository.update(
+      { vehicleId: image.vehicleId },
+      { isPrincipal: false },
+    );
+
+    // Luego, marcar esta imagen como principal
+    await this.imageRepository.update(id, { isPrincipal: true });
+
+    return await this.imageRepository.findOne({
+      where: { id },
+      relations: ['vehicle'],
     });
   }
 }
