@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { v2 as cloudinary } from 'cloudinary';
 import { Repository } from 'typeorm';
 import { Image } from '../entities/image.entity';
-import { CreateImageDto } from './dto/image.dto';
+import { CreateImageDto, UpdateImagesOrderDto } from './dto/image.dto';
 
 interface CloudinaryResult {
   secure_url: string;
@@ -119,7 +119,7 @@ export class ImagesService {
   async findByVehicleId(vehicleId: string) {
     return await this.imageRepository.find({
       where: { vehicleId },
-      order: { isPrincipal: 'DESC', createdAt: 'ASC' },
+      order: { isPrincipal: 'DESC', sortOrder: 'ASC', createdAt: 'ASC' },
     });
   }
 
@@ -146,5 +146,37 @@ export class ImagesService {
       where: { id },
       relations: ['vehicle'],
     });
+  }
+
+  async updateImagesOrder(updateOrderDto: UpdateImagesOrderDto) {
+    const { images } = updateOrderDto;
+
+    // Verificar que todas las imágenes existen
+    const imageIds = images.map((img) => img.id);
+    const existingImages = await this.imageRepository
+      .createQueryBuilder('image')
+      .where('image.id IN (:...ids)', { ids: imageIds })
+      .getMany();
+
+    if (existingImages.length !== images.length) {
+      throw new NotFoundException('One or more images not found');
+    }
+
+    // Actualizar el orden de cada imagen
+    const updatePromises = images.map((imageOrder) =>
+      this.imageRepository.update(imageOrder.id, {
+        sortOrder: imageOrder.sortOrder,
+      }),
+    );
+
+    await Promise.all(updatePromises);
+
+    // Retornar las imágenes actualizadas ordenadas
+    return await this.imageRepository
+      .createQueryBuilder('image')
+      .leftJoinAndSelect('image.vehicle', 'vehicle')
+      .where('image.id IN (:...ids)', { ids: imageIds })
+      .orderBy('image.sortOrder', 'ASC')
+      .getMany();
   }
 }

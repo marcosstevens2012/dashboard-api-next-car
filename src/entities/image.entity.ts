@@ -25,6 +25,9 @@ export class Image {
   @Column({ default: false })
   isPrincipal: boolean;
 
+  @Column({ default: 0 })
+  sortOrder: number;
+
   @Column()
   vehicleId: string;
 

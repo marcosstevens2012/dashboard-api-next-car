@@ -1,12 +1,15 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { UpdateImagesOrderDto } from './dto/image.dto';
 import { ImagesService } from './images.service';
 
 @ApiTags('images')
@@ -91,5 +94,40 @@ export class ImagesController {
   })
   remove(@Param('id') id: string) {
     return this.imagesService.remove(id);
+  }
+
+  @Patch('order')
+  @ApiOperation({
+    summary: 'Actualizar orden de imágenes',
+    description: 'Actualiza el orden de visualización de múltiples imágenes',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Orden de imágenes actualizado exitosamente',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', example: 'img123' },
+          url: { type: 'string', example: '/uploads/vehicle-1234567890.jpg' },
+          vehicleId: { type: 'string', example: 'clz123abc456' },
+          sortOrder: { type: 'number', example: 1 },
+          isPrincipal: { type: 'boolean', example: false },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Datos de entrada inválidos',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Una o más imágenes no encontradas',
+  })
+  updateOrder(@Body() updateOrderDto: UpdateImagesOrderDto) {
+    return this.imagesService.updateImagesOrder(updateOrderDto);
   }
 }

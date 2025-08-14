@@ -463,6 +463,49 @@ export class VehiclesController {
     return await Promise.all(imagePromises);
   }
 
+  @Get(':id/images')
+  @ApiOperation({
+    summary: 'Obtener imágenes de un vehículo',
+    description:
+      'Obtiene todas las imágenes de un vehículo específico ordenadas por sortOrder',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del vehículo',
+    example: 'clz123abc456',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de imágenes del vehículo ordenadas',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', example: 'img123' },
+          url: {
+            type: 'string',
+            example: 'https://res.cloudinary.com/example/image.webp',
+          },
+          publicId: { type: 'string', example: 'nextcar-vehicles/image123' },
+          filename: { type: 'string', example: 'image.jpg' },
+          isPrincipal: { type: 'boolean', example: false },
+          sortOrder: { type: 'number', example: 1 },
+          vehicleId: { type: 'string', example: 'clz123abc456' },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Vehículo no encontrado.' })
+  async getVehicleImages(@Param('id') vehicleId: string) {
+    // Verificar que el vehículo existe
+    await this.vehiclesService.findOne(vehicleId);
+
+    // Obtener imágenes ordenadas
+    return await this.imagesService.findByVehicleId(vehicleId);
+  }
+
   @Post(':id/upload-videos')
   @UseInterceptors(FilesInterceptor('videos'))
   @ApiOperation({
