@@ -29,7 +29,7 @@ export class Vehicle {
   @Column('int')
   anio: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 12, scale: 2 })
   precio: number;
 
   @Column('text')
