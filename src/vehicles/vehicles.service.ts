@@ -34,68 +34,67 @@ export class VehiclesService {
     } = query;
     const skip = (page - 1) * limit;
 
-    // Construir queryBuilder
-    const queryBuilder = this.vehicleRepository
+    // Primero obtener los IDs de vehículos con paginación (sin joins para evitar duplicados)
+    const idsQueryBuilder = this.vehicleRepository
       .createQueryBuilder('vehicle')
-      .leftJoinAndSelect('vehicle.images', 'images')
-      .leftJoinAndSelect('vehicle.videos', 'videos')
+      .select('vehicle.id')
       .orderBy(`vehicle.${sortBy}`, sortOrder.toUpperCase() as 'ASC' | 'DESC')
-      .addOrderBy('images.isPrincipal', 'DESC')
-      .addOrderBy('images.createdAt', 'ASC')
       .skip(skip)
       .take(limit);
 
-    // Aplicar filtros
+    // Aplicar filtros a la consulta de IDs
     if (filters.search) {
-      queryBuilder.andWhere(
+      idsQueryBuilder.andWhere(
         '(vehicle.nombre LIKE :search OR vehicle.marca LIKE :search OR vehicle.modelo LIKE :search OR vehicle.descripcion LIKE :search)',
         { search: `%${filters.search}%` },
       );
     }
 
     if (filters.marca) {
-      queryBuilder.andWhere('vehicle.marca = :marca', { marca: filters.marca });
+      idsQueryBuilder.andWhere('vehicle.marca = :marca', {
+        marca: filters.marca,
+      });
     }
 
     if (filters.tipo) {
-      queryBuilder.andWhere('vehicle.tipo = :tipo', { tipo: filters.tipo });
+      idsQueryBuilder.andWhere('vehicle.tipo = :tipo', { tipo: filters.tipo });
     }
 
     if (filters.combustible) {
-      queryBuilder.andWhere('vehicle.combustible = :combustible', {
+      idsQueryBuilder.andWhere('vehicle.combustible = :combustible', {
         combustible: filters.combustible,
       });
     }
 
     if (filters.transmision) {
-      queryBuilder.andWhere('vehicle.transmision = :transmision', {
+      idsQueryBuilder.andWhere('vehicle.transmision = :transmision', {
         transmision: filters.transmision,
       });
     }
 
     if (filters.traccion) {
-      queryBuilder.andWhere('vehicle.traccion = :traccion', {
+      idsQueryBuilder.andWhere('vehicle.traccion = :traccion', {
         traccion: filters.traccion,
       });
     }
 
     if (filters.anioMin && filters.anioMax) {
-      queryBuilder.andWhere('vehicle.anio BETWEEN :anioMin AND :anioMax', {
+      idsQueryBuilder.andWhere('vehicle.anio BETWEEN :anioMin AND :anioMax', {
         anioMin: filters.anioMin,
         anioMax: filters.anioMax,
       });
     } else if (filters.anioMin) {
-      queryBuilder.andWhere('vehicle.anio >= :anioMin', {
+      idsQueryBuilder.andWhere('vehicle.anio >= :anioMin', {
         anioMin: filters.anioMin,
       });
     } else if (filters.anioMax) {
-      queryBuilder.andWhere('vehicle.anio <= :anioMax', {
+      idsQueryBuilder.andWhere('vehicle.anio <= :anioMax', {
         anioMax: filters.anioMax,
       });
     }
 
     if (filters.precioMin && filters.precioMax) {
-      queryBuilder.andWhere(
+      idsQueryBuilder.andWhere(
         'vehicle.precio BETWEEN :precioMin AND :precioMax',
         {
           precioMin: filters.precioMin,
@@ -103,22 +102,136 @@ export class VehiclesService {
         },
       );
     } else if (filters.precioMin) {
-      queryBuilder.andWhere('vehicle.precio >= :precioMin', {
+      idsQueryBuilder.andWhere('vehicle.precio >= :precioMin', {
         precioMin: filters.precioMin,
       });
     } else if (filters.precioMax) {
-      queryBuilder.andWhere('vehicle.precio <= :precioMax', {
+      idsQueryBuilder.andWhere('vehicle.precio <= :precioMax', {
         precioMax: filters.precioMax,
       });
     }
 
     if (filters.destacado !== undefined) {
-      queryBuilder.andWhere('vehicle.destacado = :destacado', {
+      idsQueryBuilder.andWhere('vehicle.destacado = :destacado', {
         destacado: filters.destacado,
       });
     }
 
-    const [vehicles, total] = await queryBuilder.getManyAndCount();
+    // Obtener los IDs
+    const vehicleIds = await idsQueryBuilder.getRawMany();
+    const ids = vehicleIds.map((v) => v.vehicle_id);
+
+    // Obtener el count total (para paginación) usando la misma query pero sin limit/skip
+    const totalQueryBuilder = this.vehicleRepository
+      .createQueryBuilder('vehicle')
+      .select('COUNT(vehicle.id)', 'count');
+
+    // Aplicar los mismos filtros para el count
+    if (filters.search) {
+      totalQueryBuilder.andWhere(
+        '(vehicle.nombre LIKE :search OR vehicle.marca LIKE :search OR vehicle.modelo LIKE :search OR vehicle.descripcion LIKE :search)',
+        { search: `%${filters.search}%` },
+      );
+    }
+
+    if (filters.marca) {
+      totalQueryBuilder.andWhere('vehicle.marca = :marca', {
+        marca: filters.marca,
+      });
+    }
+
+    if (filters.tipo) {
+      totalQueryBuilder.andWhere('vehicle.tipo = :tipo', {
+        tipo: filters.tipo,
+      });
+    }
+
+    if (filters.combustible) {
+      totalQueryBuilder.andWhere('vehicle.combustible = :combustible', {
+        combustible: filters.combustible,
+      });
+    }
+
+    if (filters.transmision) {
+      totalQueryBuilder.andWhere('vehicle.transmision = :transmision', {
+        transmision: filters.transmision,
+      });
+    }
+
+    if (filters.traccion) {
+      totalQueryBuilder.andWhere('vehicle.traccion = :traccion', {
+        traccion: filters.traccion,
+      });
+    }
+
+    if (filters.anioMin && filters.anioMax) {
+      totalQueryBuilder.andWhere('vehicle.anio BETWEEN :anioMin AND :anioMax', {
+        anioMin: filters.anioMin,
+        anioMax: filters.anioMax,
+      });
+    } else if (filters.anioMin) {
+      totalQueryBuilder.andWhere('vehicle.anio >= :anioMin', {
+        anioMin: filters.anioMin,
+      });
+    } else if (filters.anioMax) {
+      totalQueryBuilder.andWhere('vehicle.anio <= :anioMax', {
+        anioMax: filters.anioMax,
+      });
+    }
+
+    if (filters.precioMin && filters.precioMax) {
+      totalQueryBuilder.andWhere(
+        'vehicle.precio BETWEEN :precioMin AND :precioMax',
+        {
+          precioMin: filters.precioMin,
+          precioMax: filters.precioMax,
+        },
+      );
+    } else if (filters.precioMin) {
+      totalQueryBuilder.andWhere('vehicle.precio >= :precioMin', {
+        precioMin: filters.precioMin,
+      });
+    } else if (filters.precioMax) {
+      totalQueryBuilder.andWhere('vehicle.precio <= :precioMax', {
+        precioMax: filters.precioMax,
+      });
+    }
+
+    if (filters.destacado !== undefined) {
+      totalQueryBuilder.andWhere('vehicle.destacado = :destacado', {
+        destacado: filters.destacado,
+      });
+    }
+
+    const totalResult = await totalQueryBuilder.getRawOne();
+    const total = parseInt(totalResult.count) || 0;
+
+    // Si no hay IDs, retornar respuesta vacía
+    if (ids.length === 0) {
+      return {
+        data: [],
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+          hasNext: page < Math.ceil(total / limit),
+          hasPrev: page > 1,
+        },
+        filters: filters,
+      };
+    }
+
+    // Ahora obtener los vehículos completos con sus relaciones usando los IDs obtenidos
+    const vehicles = await this.vehicleRepository
+      .createQueryBuilder('vehicle')
+      .leftJoinAndSelect('vehicle.images', 'images')
+      .leftJoinAndSelect('vehicle.videos', 'videos')
+      .where('vehicle.id IN (:...ids)', { ids })
+      .orderBy(`vehicle.${sortBy}`, sortOrder.toUpperCase() as 'ASC' | 'DESC')
+      .addOrderBy('images.isPrincipal', 'DESC')
+      .addOrderBy('images.createdAt', 'ASC')
+      .getMany();
 
     // Formatear datos para la página web
     const formattedVehicles = vehicles.map((vehicle) => ({
