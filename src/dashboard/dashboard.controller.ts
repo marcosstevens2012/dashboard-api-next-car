@@ -22,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ContactsService } from '../contacts/contacts.service';
+import { UpdateImagesOrderDto } from '../images/dto/image.dto';
 import { ImagesService } from '../images/images.service';
 import {
   CreateVehicleDto,
@@ -224,6 +225,42 @@ export class DashboardController {
   @ApiResponse({ status: 401, description: 'No autorizado.' })
   async setPrincipalImage(@Param('id') id: string) {
     return await this.imagesService.setPrincipal(id);
+  }
+
+  @Patch('images/order')
+  @ApiOperation({
+    summary: 'Actualizar orden de imágenes (Admin)',
+    description: 'Actualiza el orden de visualización de múltiples imágenes',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Orden de imágenes actualizado exitosamente.',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          url: { type: 'string' },
+          vehicleId: { type: 'string' },
+          sortOrder: { type: 'number' },
+          isPrincipal: { type: 'boolean' },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Datos de entrada inválidos.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Una o más imágenes no encontradas.',
+  })
+  @ApiResponse({ status: 401, description: 'No autorizado.' })
+  async updateImagesOrder(@Body() updateOrderDto: UpdateImagesOrderDto) {
+    return await this.imagesService.updateImagesOrder(updateOrderDto);
   }
 
   // === GESTIÓN DE VIDEOS ===
