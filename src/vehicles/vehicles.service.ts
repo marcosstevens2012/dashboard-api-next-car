@@ -230,6 +230,7 @@ export class VehiclesService {
       .where('vehicle.id IN (:...ids)', { ids })
       .orderBy(`vehicle.${sortBy}`, sortOrder.toUpperCase() as 'ASC' | 'DESC')
       .addOrderBy('images.isPrincipal', 'DESC')
+      .addOrderBy('images.sortOrder', 'ASC')
       .addOrderBy('images.createdAt', 'ASC')
       .getMany();
 
@@ -279,16 +280,23 @@ export class VehiclesService {
     const { page = 1, limit = 6 } = query;
     const skip = (page - 1) * limit;
 
-    const [vehicles, total] = await Promise.all([
-      this.vehicleRepository.find({
-        where: { destacado: true },
-        relations: ['images', 'videos'],
-        order: { createdAt: 'DESC' },
-        skip,
-        take: limit,
-      }),
-      this.vehicleRepository.count({ where: { destacado: true } }),
-    ]);
+    // Usar query builder para poder ordenar las imágenes correctamente
+    const vehicles = await this.vehicleRepository
+      .createQueryBuilder('vehicle')
+      .leftJoinAndSelect('vehicle.images', 'images')
+      .leftJoinAndSelect('vehicle.videos', 'videos')
+      .where('vehicle.destacado = :destacado', { destacado: true })
+      .orderBy('vehicle.createdAt', 'DESC')
+      .addOrderBy('images.isPrincipal', 'DESC')
+      .addOrderBy('images.sortOrder', 'ASC')
+      .addOrderBy('images.createdAt', 'ASC')
+      .skip(skip)
+      .take(limit)
+      .getMany();
+
+    const total = await this.vehicleRepository.count({
+      where: { destacado: true },
+    });
 
     const formattedVehicles = vehicles.map((vehicle) => ({
       id: vehicle.id,
@@ -443,6 +451,7 @@ export class VehiclesService {
       .leftJoinAndSelect('vehicle.videos', 'videos')
       .orderBy('vehicle.createdAt', 'DESC')
       .addOrderBy('images.isPrincipal', 'DESC')
+      .addOrderBy('images.sortOrder', 'ASC')
       .addOrderBy('images.createdAt', 'ASC')
       .getMany();
   }
@@ -454,6 +463,7 @@ export class VehiclesService {
       .leftJoinAndSelect('vehicle.videos', 'videos')
       .where('vehicle.id = :id', { id })
       .orderBy('images.isPrincipal', 'DESC')
+      .addOrderBy('images.sortOrder', 'ASC')
       .addOrderBy('images.createdAt', 'ASC')
       .getOne();
 
