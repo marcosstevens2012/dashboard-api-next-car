@@ -280,23 +280,45 @@ export class VehiclesService {
     const { page = 1, limit = 6 } = query;
     const skip = (page - 1) * limit;
 
-    // Usar query builder para poder ordenar las imágenes correctamente
-    const vehicles = await this.vehicleRepository
+    // Primero obtenemos los IDs de los vehículos destacados con paginación
+    const vehicleIds = await this.vehicleRepository
       .createQueryBuilder('vehicle')
-      .leftJoinAndSelect('vehicle.images', 'images')
-      .leftJoinAndSelect('vehicle.videos', 'videos')
+      .select('vehicle.id')
       .where('vehicle.destacado = :destacado', { destacado: true })
       .orderBy('vehicle.createdAt', 'DESC')
-      .addOrderBy('images.isPrincipal', 'DESC')
-      .addOrderBy('images.sortOrder', 'ASC')
-      .addOrderBy('images.createdAt', 'ASC')
       .skip(skip)
       .take(limit)
       .getMany();
 
+    // Si no hay vehículos, retornamos array vacío
+    if (vehicleIds.length === 0) {
+      return {
+        data: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+    }
+
+    // Obtenemos el total de vehículos destacados
     const total = await this.vehicleRepository.count({
       where: { destacado: true },
     });
+
+    // Ahora obtenemos los datos completos de los vehículos con sus imágenes y videos
+    const vehicles = await this.vehicleRepository
+      .createQueryBuilder('vehicle')
+      .leftJoinAndSelect('vehicle.images', 'images')
+      .leftJoinAndSelect('vehicle.videos', 'videos')
+      .where('vehicle.id IN (:...ids)', { ids: vehicleIds.map((v) => v.id) })
+      .orderBy('vehicle.createdAt', 'DESC')
+      .addOrderBy('images.isPrincipal', 'DESC')
+      .addOrderBy('images.sortOrder', 'ASC')
+      .addOrderBy('images.createdAt', 'ASC')
+      .getMany();
 
     const formattedVehicles = vehicles.map((vehicle) => ({
       id: vehicle.id,
