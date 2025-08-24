@@ -86,7 +86,7 @@ async function bootstrap() {
       description: 'Ingresa el JWT token obtenido del endpoint /auth/login',
       in: 'header',
     })
-    .addServer('http://localhost:3000', 'Desarrollo')
+    .addServer(`http://localhost:${process.env.PORT || 3000}`, 'Desarrollo')
     .addServer(
       'https://nextcar-dashboard-api.onrender.com',
       'Producción (Render)',
