@@ -26,7 +26,12 @@ async function bootstrap() {
           /^https:\/\/.*\.vercel\.app$/,
           'https://nextcar-dashboard.vercel.app',
           'https://www.nextcar-dashboard.vercel.app',
-          // Agregar aquí el dominio personalizado de tu frontend
+          // Dominios de nextcar.com.ar
+          'https://nextcar.com.ar',
+          'https://www.nextcar.com.ar',
+          'http://nextcar.com.ar',
+          'http://www.nextcar.com.ar',
+          // Variable de entorno para dominio frontend personalizado
           process.env.FRONTEND_URL,
         ].filter((origin): origin is string | RegExp => Boolean(origin)) // Remover valores undefined con type guard
       : true; // Permitir todas las origins para desarrollo
